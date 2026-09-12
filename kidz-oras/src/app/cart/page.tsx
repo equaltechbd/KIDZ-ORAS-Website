@@ -3,10 +3,10 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { ArrowLeft, Trash2, Plus, Minus, ShoppingBag, ShieldCheck, Tag } from "lucide-react";
+// সবগুলো প্রয়োজনীয় আইকন এখানে ইমপোর্ট করা হলো
+import { Trash2, Plus, Minus, ArrowLeft, ShoppingCart, Tag, ShoppingBag, ShieldCheck } from "lucide-react";
 
 export default function CartPage() {
-  // ডেমো কার্ট আইটেম (স্টেট দিয়ে ম্যানেজ করা হয়েছে যাতে পরিমাণ কমানো-বাড়ানো যায়)
   const [cartItems, setCartItems] = useState([
     { 
       id: 1, 
@@ -24,7 +24,6 @@ export default function CartPage() {
     }
   ]);
 
-  // পরিমাণ (Quantity) আপডেট করার ফাংশন
   const updateQuantity = (id: number, delta: number) => {
     setCartItems(items =>
       items.map(item =>
@@ -33,12 +32,10 @@ export default function CartPage() {
     );
   };
 
-  // আইটেম ডিলিট করার ফাংশন
   const removeItem = (id: number) => {
     setCartItems(items => items.filter(item => item.id !== id));
   };
 
-  // টোটাল হিসাব
   const subtotal = cartItems.reduce((acc, item) => acc + (item.price * item.qty), 0);
   const deliveryCharge = 60;
   const total = subtotal > 0 ? subtotal + deliveryCharge : 0;
