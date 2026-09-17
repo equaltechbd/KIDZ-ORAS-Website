@@ -1,34 +1,75 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Package, Plus, Search, Edit, Trash2, Tag, Filter, X, Percent, Image as ImageIcon, Layers } from "lucide-react";
+// Supabase Client ইমপোর্ট করা হলো
+import { createClient } from "@/utils/supabase/client";
 
 export default function ProductsPage() {
   const [showAddModal, setShowAddModal] = useState(false);
   const [showCategoryModal, setShowCategoryModal] = useState(false);
-
-  // ডায়নামিক ক্যাটাগরি স্টেট (ভবিষ্যতে এটি Supabase থেকে আসবে)
-  const [categories, setCategories] = useState([
-    { id: "1", name: "Babies Clothes" },
-    { id: "2", name: "Educational Toys" },
-    { id: "3", name: "Feeding Items" }
-  ]);
+  
+  // ডেমোর বদলে এখন Supabase থেকে ডেটা আসবে, তাই প্রথমে এটি ফাঁকা
+  const [categories, setCategories] = useState<any[]>([]);
   const [newCategoryName, setNewCategoryName] = useState("");
+  const [isLoading, setIsLoading] = useState(true);
 
-  // নতুন ক্যাটাগরি যোগ করার ফাংশন
-  const handleAddCategory = () => {
-    if (newCategoryName.trim()) {
-      setCategories([...categories, { id: Date.now().toString(), name: newCategoryName }]);
+  // Supabase ইনিশিয়ালাইজ করা
+  const supabase = createClient();
+
+  // পেজ লোড হওয়ার সাথে সাথে Supabase থেকে ক্যাটাগরি ফেচ করা
+  useEffect(() => {
+    fetchCategories();
+  }, []);
+
+  const fetchCategories = async () => {
+    setIsLoading(true);
+    const { data, error } = await supabase
+      .from('categories')
+      .select('*')
+      .order('created_at', { ascending: false });
+    
+    if (error) {
+      console.error("Error fetching categories:", error);
+    } else {
+      setCategories(data || []);
+    }
+    setIsLoading(false);
+  };
+
+  // Supabase-এ নতুন ক্যাটাগরি সেভ করা
+  const handleAddCategory = async () => {
+    if (!newCategoryName.trim()) return;
+
+    const { data, error } = await supabase
+      .from('categories')
+      .insert([{ name: newCategoryName }])
+      .select();
+
+    if (error) {
+      console.error("Error adding category:", error);
+      alert("এই ক্যাটাগরি হয়তো আগে থেকেই আছে অথবা অন্য কোনো সমস্যা হয়েছে।");
+    } else if (data) {
+      setCategories([...categories, data[0]]);
       setNewCategoryName("");
     }
   };
 
-  // ক্যাটাগরি ডিলিট করার ফাংশন
-  const handleDeleteCategory = (id: string) => {
-    setCategories(categories.filter(cat => cat.id !== id));
+  // Supabase থেকে ক্যাটাগরি ডিলিট করা
+  const handleDeleteCategory = async (id: string) => {
+    const { error } = await supabase
+      .from('categories')
+      .delete()
+      .eq('id', id);
+
+    if (error) {
+      console.error("Error deleting category:", error);
+    } else {
+      setCategories(categories.filter(cat => cat.id !== id));
+    }
   };
 
-  // ডেমো প্রোডাক্ট লিস্ট
+  // ডেমো প্রোডাক্ট লিস্ট (ডিজাইন ঠিক রাখার জন্য এটি আগের মতোই রাখলাম, পরের ধাপে এটিও কানেক্ট করব)
   const [products] = useState([
     {
       id: "PRD-001",
@@ -85,7 +126,7 @@ export default function ProductsPage() {
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
           <input 
             type="text" 
-            placeholder="প্রোডাক্টের নাম দিয়ে খুঁজুন..." 
+            placeholder="প্রোডাক্টের নাম দিয়ে খুঁজুন..." 
             className="w-full pl-10 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:bg-white focus:border-[#E52565] outline-none transition-colors"
           />
         </div>
@@ -102,7 +143,7 @@ export default function ProductsPage() {
         </div>
       </div>
 
-      {/* Products Table */}
+      {/* Products Table (Original Design) */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
@@ -163,7 +204,7 @@ export default function ProductsPage() {
         </div>
       </div>
 
-      {/* 🟢 CATEGORY MANAGEMENT MODAL 🟢 */}
+      {/* 🟢 CATEGORY MANAGEMENT MODAL (Supabase Connected) 🟢 */}
       {showCategoryModal && (
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl relative animate-in fade-in zoom-in duration-200">
@@ -196,27 +237,32 @@ export default function ProductsPage() {
 
               {/* Category List */}
               <div className="space-y-2 max-h-[40vh] overflow-y-auto pr-1 custom-scrollbar">
-                {categories.length === 0 && <p className="text-center text-gray-500 py-4 text-sm">কোনো ক্যাটাগরি নেই</p>}
-                {categories.map(cat => (
-                  <div key={cat.id} className="flex justify-between items-center bg-white border border-gray-100 p-3 rounded-xl shadow-sm hover:border-[#E52565]/30 transition-colors">
-                    <span className="font-bold text-gray-700 flex items-center gap-2">
-                      <div className="w-2 h-2 rounded-full bg-[#E52565]"></div> {cat.name}
-                    </span>
-                    <button 
-                      onClick={() => handleDeleteCategory(cat.id)}
-                      className="text-red-400 p-1.5 hover:bg-red-50 hover:text-red-600 rounded-md transition-colors"
-                    >
-                      <Trash2 size={16}/>
-                    </button>
-                  </div>
-                ))}
+                {isLoading ? (
+                  <p className="text-center text-gray-500 py-4 text-sm animate-pulse">লোড হচ্ছে...</p>
+                ) : categories.length === 0 ? (
+                  <p className="text-center text-gray-500 py-4 text-sm">কোনো ক্যাটাগরি নেই</p>
+                ) : (
+                  categories.map(cat => (
+                    <div key={cat.id} className="flex justify-between items-center bg-white border border-gray-100 p-3 rounded-xl shadow-sm hover:border-[#E52565]/30 transition-colors">
+                      <span className="font-bold text-gray-700 flex items-center gap-2">
+                        <div className="w-2 h-2 rounded-full bg-[#E52565]"></div> {cat.name}
+                      </span>
+                      <button 
+                        onClick={() => handleDeleteCategory(cat.id)}
+                        className="text-red-400 p-1.5 hover:bg-red-50 hover:text-red-600 rounded-md transition-colors"
+                      >
+                        <Trash2 size={16}/>
+                      </button>
+                    </div>
+                  ))
+                )}
               </div>
             </div>
           </div>
         </div>
       )}
 
-      {/* 🟢 ADD PRODUCT MODAL 🟢 */}
+      {/* 🟢 ADD PRODUCT MODAL (Original Design Kept Intact) 🟢 */}
       {showAddModal && (
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl w-full max-w-3xl max-h-[90vh] overflow-y-auto shadow-2xl relative animate-in fade-in zoom-in duration-200">
@@ -240,14 +286,14 @@ export default function ProductsPage() {
                   <div>
                     <label className="block text-sm font-bold text-gray-700 mb-1.5">ক্যাটাগরি সিলেক্ট করুন *</label>
                     <select className="w-full bg-gray-50 border border-gray-200 rounded-lg px-4 py-2.5 focus:bg-white focus:border-[#E52565] outline-none text-gray-700 font-medium">
-                      {/* ডায়নামিক ক্যাটাগরি লিস্ট */}
+                      {/* ডায়নামিক ক্যাটাগরি লিস্ট */}
                       {categories.map(cat => (
                         <option key={cat.id} value={cat.name}>{cat.name}</option>
                       ))}
                     </select>
                   </div>
                   <div>
-                    <label className="block text-sm font-bold text-gray-700 mb-1.5">স্টক (কয় পিস আছে?) *</label>
+                    <label className="block text-sm font-bold text-gray-700 mb-1.5">স্টক (কয় পিস আছে?) *</label>
                     <input type="number" placeholder="যেমন: 50" className="w-full bg-gray-50 border border-gray-200 rounded-lg px-4 py-2.5 focus:bg-white focus:border-[#E52565] outline-none" />
                   </div>
                 </div>
@@ -262,7 +308,7 @@ export default function ProductsPage() {
                   </div>
                   <div>
                     <label className="block text-sm font-bold text-[#E52565] mb-1.5">ডিসকাউন্ট প্রাইস (অপশনাল)</label>
-                    <input type="number" placeholder="ছাড় দেওয়ার পর দাম (যেমন: 600)" className="w-full bg-white border border-[#E52565]/30 rounded-lg px-4 py-2.5 focus:border-[#E52565] outline-none" />
+                    <input type="number" placeholder="ছাড় দেওয়ার পর দাম (যেমন: 600)" className="w-full bg-white border border-[#E52565]/30 rounded-lg px-4 py-2.5 focus:border-[#E52565] outline-none" />
                   </div>
                 </div>
               </div>
