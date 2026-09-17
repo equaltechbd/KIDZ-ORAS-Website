@@ -24,7 +24,9 @@ export default function AdminLogin() {
     });
 
     if (error) {
-      setError("ইমেইল অথবা পাসওয়ার্ড ভুল হয়েছে!");
+      // শুধু এই মেসেজটি পরিবর্তন করা হলো যাতে আসল এরর দেখতে পারি
+      setError(`Error: ${error.message}`);
+      console.error("Supabase Login Error:", error);
       setLoading(false);
     } else {
       router.push("/admin");
