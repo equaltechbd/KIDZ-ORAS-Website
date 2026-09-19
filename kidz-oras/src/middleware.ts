@@ -6,9 +6,13 @@ export async function middleware(request: NextRequest) {
     request: { headers: request.headers },
   })
 
+  // 🔴 এখানে ফলব্যাক URL এবং Key বসানো হলো 🔴
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://dummy.supabase.co';
+  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'dummy_key';
+
   const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    supabaseUrl,
+    supabaseAnonKey,
     {
       cookies: {
         get(name: string) {
@@ -33,12 +37,12 @@ export async function middleware(request: NextRequest) {
   const isAuthPage = request.nextUrl.pathname.startsWith('/admin/login')
   const isAdminPage = request.nextUrl.pathname.startsWith('/admin')
 
-  // যদি লগইন করা না থাকে এবং /admin এ ঢোকার চেষ্টা করে, তবে লগইনে পাঠিয়ে দেবে
+  // যদি লগইন করা না থাকে এবং /admin এ ঢোকার চেষ্টা করে, তবে লগইনে পাঠিয়ে দেবে
   if (isAdminPage && !isAuthPage && !user) {
     return NextResponse.redirect(new URL('/admin/login', request.url))
   }
 
-  // যদি লগইন করা থাকে এবং আবার লগইন পেজে যায়, তবে ড্যাশবোর্ডে পাঠিয়ে দেবে
+  // যদি লগইন করা থাকে এবং আবার লগইন পেজে যায়, তবে ড্যাশবোর্ডে পাঠিয়ে দেবে
   if (isAuthPage && user) {
     return NextResponse.redirect(new URL('/admin', request.url))
   }
