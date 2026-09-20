@@ -1,8 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { X, LayoutDashboard, ShoppingCart, Package, Settings, LogOut } from "lucide-react";
+import { createClient } from "@/utils/supabase/client";
 
 interface SidebarProps {
   isOpen: boolean;
@@ -11,6 +12,15 @@ interface SidebarProps {
 
 export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
   const pathname = usePathname();
+  const router = useRouter();
+  const supabase = createClient();
+
+  // 🔴 লগআউট ফাংশন 🔴
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    router.push("/admin/login");
+    router.refresh();
+  };
 
   const navLinks = [
     { name: "Dashboard", href: "/admin", icon: LayoutDashboard },
@@ -50,8 +60,12 @@ export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
           })}
         </div>
 
+        {/* Desktop Logout Button */}
         <div className="px-4 mt-auto pt-4 border-t border-[#1f1f1f]">
-          <button className="w-full flex items-center gap-3 px-4 py-3 text-gray-400 hover:text-red-400 hover:bg-red-400/10 rounded-lg transition-colors">
+          <button 
+            onClick={handleLogout}
+            className="w-full flex items-center gap-3 px-4 py-3 text-gray-400 hover:text-red-400 hover:bg-red-400/10 rounded-lg transition-colors"
+          >
             <LogOut size={20} />
             <span>Logout</span>
           </button>
@@ -100,6 +114,17 @@ export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
               </Link>
             );
           })}
+        </div>
+
+        {/* Mobile Logout Button */}
+        <div className="px-4 mt-auto pt-4 border-t border-[#1f1f1f]">
+          <button 
+            onClick={handleLogout}
+            className="w-full flex items-center gap-3 px-4 py-3 text-gray-400 hover:text-red-400 hover:bg-red-400/10 rounded-lg transition-colors"
+          >
+            <LogOut size={20} />
+            <span>Logout</span>
+          </button>
         </div>
       </nav>
     </>
