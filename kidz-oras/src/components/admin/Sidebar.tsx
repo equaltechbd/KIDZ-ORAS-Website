@@ -4,7 +4,8 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { 
   X, LayoutDashboard, ShoppingCart, Package, 
-  Settings, LogOut, Users, BarChart3, TrendingUp, UserCog
+  Settings, LogOut, Users, BarChart3, TrendingUp, 
+  Star, Receipt, Headphones 
 } from "lucide-react";
 import { createClient } from "@/utils/supabase/client";
 
@@ -24,12 +25,15 @@ export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
     router.refresh();
   };
 
+  // আপডেটেড মেনু লিস্ট
   const sidebarGroups = [
     {
       title: "OVERVIEW",
       links: [
         { name: "Dashboard", href: "/admin", icon: LayoutDashboard },
         { name: "Analytics", href: "/admin/analytics", icon: TrendingUp },
+        { name: "Reviews", href: "/admin/reviews", icon: Star },
+        { name: "Business Records", href: "/admin/reports", icon: BarChart3 },
       ]
     },
     {
@@ -38,21 +42,21 @@ export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
         { name: "Orders", href: "/admin/orders", icon: ShoppingCart, badge: "12" },
         { name: "Products", href: "/admin/products", icon: Package },
         { name: "Customers", href: "/admin/customers", icon: Users },
-        { name: "Reports", href: "/admin/reports", icon: BarChart3 },
+        { name: "Invoices", href: "/admin/invoices", icon: Receipt },
+        { name: "Customer Support", href: "/admin/support", icon: Headphones },
       ]
     },
     {
       title: "SYSTEM",
       links: [
         { name: "Settings", href: "/admin/settings", icon: Settings },
-        { name: "Staff & Roles", href: "/admin/staff", icon: UserCog },
       ]
     }
   ];
 
   const SidebarContent = () => (
     <div className="flex flex-col h-full">
-      {/* Top spacing since logo is removed */}
+      {/* Top spacing since logo is removed from here */}
       <div className="pt-6"></div>
 
       <div className="flex-1 overflow-y-auto px-4 space-y-6 scrollbar-hide">
@@ -93,30 +97,37 @@ export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
         ))}
       </div>
 
-      {/* Profile & Logout Section at Bottom */}
-      <div className="p-4 mt-auto border-t border-[#1f1f1f] bg-[#131313] space-y-3">
-        
-        {/* User Profile */}
-        <div className="flex items-center gap-3 px-2 py-1">
-          <div className="w-10 h-10 rounded-full bg-[#1a1a1a] border border-[#2a2a2a] overflow-hidden">
-            <img alt="Admin Profile" className="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuC4Vfj2tOVTojC_dn1c4lD0LhWFz3lz9_AJdIkGRJZF48kgrpzGunfwZmtiSCWSc5pWjOGrPRHfEfOHQ6gfJLv_F8E8dRRFcCjflG0PHJ_uM4H4TLMiZi8AbrRVHSpYCc_794n5Uqbr-6S3o5QYqp8sZr07isEsUOKQkFPobHV7tTv2ianbJJFhV6Y9fKk9ahsN_aV3kMg9zCY3IAHPphz8ctmH_QfzUDcrhcoWOdqehePfoKNPa7gs" />
-          </div>
-          <div>
-            <p className="text-sm font-semibold text-white">Hasib Al Hasan</p>
-            <p className="text-xs text-gray-500">Super Admin</p>
-          </div>
-        </div>
+      {/* 🔴 Profile & Logout Section (Side-by-Side Layout) 🔴 */}
+      <div className="p-4 mt-auto border-t border-[#1f1f1f] bg-[#131313]">
+        <div className="flex items-center justify-between gap-2 bg-[#1a1a1a] p-2 rounded-xl border border-[#2a2a2a] hover:border-[#F49547]/50 transition-colors">
+          
+          {/* Clickable Profile Area (Goes to /admin/profile) */}
+          <Link href="/admin/profile" onClick={() => setIsOpen(false)} className="flex items-center gap-3 flex-1 overflow-hidden cursor-pointer group">
+            <div className="w-9 h-9 rounded-full bg-[#2a2a2a] border border-[#333] overflow-hidden shrink-0">
+              <img alt="Admin Profile" className="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuC4Vfj2tOVTojC_dn1c4lD0LhWFz3lz9_AJdIkGRJZF48kgrpzGunfwZmtiSCWSc5pWjOGrPRHfEfOHQ6gfJLv_F8E8dRRFcCjflG0PHJ_uM4H4TLMiZi8AbrRVHSpYCc_794n5Uqbr-6S3o5QYqp8sZr07isEsUOKQkFPobHV7tTv2ianbJJFhV6Y9fKk9ahsN_aV3kMg9zCY3IAHPphz8ctmH_QfzUDcrhcoWOdqehePfoKNPa7gs" />
+            </div>
+            <div className="flex flex-col truncate">
+              <span className="text-sm font-semibold text-white group-hover:text-[#F49547] transition-colors truncate">Hasib Al Hasan</span>
+              <div className="flex items-center gap-1.5 mt-0.5">
+                <span className="text-[10px] text-gray-400">Super Admin</span>
+                <span className="w-1 h-1 rounded-full bg-gray-600"></span>
+                <span className="text-[10px] text-emerald-400 flex items-center gap-0.5" title="Working from Home">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                  Remote
+                </span>
+              </div>
+            </div>
+          </Link>
 
-        {/* Logout Button */}
-        <button 
-          onClick={handleLogout}
-          className="w-full flex items-center gap-3 px-4 py-2.5 text-gray-400 hover:text-red-400 hover:bg-red-400/10 rounded-xl transition-all duration-200 group"
-        >
-          <div className="p-1.5 rounded-md group-hover:bg-red-400/20 transition-colors">
+          {/* Logout Button */}
+          <button 
+            onClick={handleLogout}
+            className="p-2 text-gray-400 hover:text-red-400 hover:bg-red-400/10 rounded-lg transition-all duration-200 shrink-0"
+            title="Logout"
+          >
             <LogOut size={18} />
-          </div>
-          <span className="font-medium">Logout Account</span>
-        </button>
+          </button>
+        </div>
       </div>
     </div>
   );
