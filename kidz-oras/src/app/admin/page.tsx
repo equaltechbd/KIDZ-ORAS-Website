@@ -2,10 +2,10 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
+// আমাদের আসল সাইডবার কম্পোনেন্ট ইম্পোর্ট করা হলো
+import Sidebar from "@/components/admin/Sidebar";
 import { 
-  Menu, X, Bell, LayoutDashboard, ShoppingCart, Package, 
-  Settings, LogOut, TrendingUp, DollarSign, ShoppingBag, 
+  Menu, Bell, TrendingUp, DollarSign, ShoppingBag, 
   Clock, Grid, ArrowRight 
 } from "lucide-react";
 
@@ -16,99 +16,8 @@ export default function AdminDashboard() {
     // সম্পূর্ণ অ্যাডমিন প্যানেলের পার্মানেন্ট ডার্ক থিম
     <div className="bg-[#0a0a0a] text-[#e5e2e1] min-h-screen font-sans selection:bg-[#F49547]/30">
       
-      {/* ---------------- Sidebar (Desktop & Mobile Wrapper) ---------------- */}
-      
-      {/* Desktop Sidebar (Hidden on mobile) */}
-      <nav className="hidden md:flex flex-col bg-[#131313] fixed left-0 top-0 h-full w-[260px] border-r border-[#1f1f1f] py-4 z-40">
-        <div className="px-6 mb-8 mt-2 flex items-center gap-3">
-          <div className="w-10 h-10 rounded-lg bg-[#F49547]/10 flex items-center justify-center border border-[#F49547]/20">
-            <span className="font-bold text-[#F49547] text-xl">K</span>
-          </div>
-          <div>
-            <h1 className="text-lg font-bold text-white leading-tight">Kidz Oras Admin</h1>
-            <p className="text-xs text-gray-400">Management Suite</p>
-          </div>
-        </div>
-
-        <div className="flex-1 overflow-y-auto px-4 space-y-1">
-          <Link href="/admin" className="flex items-center gap-3 px-4 py-3 border-l-4 border-[#F49547] text-white font-semibold bg-[#1c1b1b] rounded-r-lg transition-all">
-            <LayoutDashboard size={20} className="text-[#F49547]" />
-            <span>Dashboard</span>
-          </Link>
-          <Link href="#" className="flex items-center gap-3 px-4 py-3 text-gray-400 hover:text-white hover:bg-[#1c1b1b] rounded-lg transition-all border-l-4 border-transparent">
-            <ShoppingCart size={20} />
-            <span>Orders</span>
-          </Link>
-          <Link href="#" className="flex items-center gap-3 px-4 py-3 text-gray-400 hover:text-white hover:bg-[#1c1b1b] rounded-lg transition-all border-l-4 border-transparent">
-            <Package size={20} />
-            <span>Products</span>
-          </Link>
-          <Link href="#" className="flex items-center gap-3 px-4 py-3 text-gray-400 hover:text-white hover:bg-[#1c1b1b] rounded-lg transition-all border-l-4 border-transparent">
-            <Settings size={20} />
-            <span>Settings</span>
-          </Link>
-        </div>
-
-        <div className="px-4 mt-auto pt-4 border-t border-[#1f1f1f]">
-          <button className="w-full flex items-center gap-3 px-4 py-3 text-gray-400 hover:text-red-400 hover:bg-red-400/10 rounded-lg transition-colors">
-            <LogOut size={20} />
-            <span>Logout</span>
-          </button>
-        </div>
-      </nav>
-
-      {/* Mobile Sidebar Overlay */}
-      {isSidebarOpen && (
-        <div 
-          className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 md:hidden"
-          onClick={() => setIsSidebarOpen(false)}
-        />
-      )}
-
-      {/* Mobile Sidebar */}
-      <nav className={`md:hidden fixed left-0 top-0 h-full w-[260px] bg-[#131313] border-r border-[#1f1f1f] flex flex-col py-4 z-50 transition-transform duration-300 ${isSidebarOpen ? "translate-x-0" : "-translate-x-full"}`}>
-        <div className="flex justify-end px-4 mb-2">
-          <button onClick={() => setIsSidebarOpen(false)} className="p-2 text-gray-400 hover:text-white rounded-full hover:bg-[#1c1b1b]">
-            <X size={24} />
-          </button>
-        </div>
-        
-        <div className="px-6 mb-8 flex items-center gap-3">
-          <div className="w-10 h-10 rounded-lg bg-[#F49547]/10 flex items-center justify-center border border-[#F49547]/20">
-            <span className="font-bold text-[#F49547] text-xl">K</span>
-          </div>
-          <div>
-            <h1 className="text-lg font-bold text-white leading-tight">Kidz Oras Admin</h1>
-            <p className="text-xs text-gray-400">Management Suite</p>
-          </div>
-        </div>
-
-        <div className="flex-1 overflow-y-auto px-4 space-y-1">
-          <Link href="/admin" className="flex items-center gap-3 px-4 py-3 border-l-4 border-[#F49547] text-white font-semibold bg-[#1c1b1b] rounded-r-lg">
-            <LayoutDashboard size={20} className="text-[#F49547]" />
-            <span>Dashboard</span>
-          </Link>
-          <Link href="#" className="flex items-center gap-3 px-4 py-3 text-gray-400 hover:text-white hover:bg-[#1c1b1b] rounded-lg">
-            <ShoppingCart size={20} />
-            <span>Orders</span>
-          </Link>
-          <Link href="#" className="flex items-center gap-3 px-4 py-3 text-gray-400 hover:text-white hover:bg-[#1c1b1b] rounded-lg">
-            <Package size={20} />
-            <span>Products</span>
-          </Link>
-          <Link href="#" className="flex items-center gap-3 px-4 py-3 text-gray-400 hover:text-white hover:bg-[#1c1b1b] rounded-lg">
-            <Settings size={20} />
-            <span>Settings</span>
-          </Link>
-        </div>
-
-        <div className="px-4 mt-auto pt-4 border-t border-[#1f1f1f]">
-          <button className="w-full flex items-center gap-3 px-4 py-3 text-gray-400 hover:text-red-400 hover:bg-red-400/10 rounded-lg transition-colors">
-            <LogOut size={20} />
-            <span>Logout</span>
-          </button>
-        </div>
-      </nav>
+      {/* ---------------- লাইভ Sidebar Component ---------------- */}
+      <Sidebar isOpen={isSidebarOpen} setIsOpen={setIsSidebarOpen} />
 
       {/* ---------------- Top Header ---------------- */}
       <header className="bg-[#131313]/80 backdrop-blur-md sticky top-0 z-30 border-b border-[#1f1f1f] flex justify-between items-center h-16 px-4 md:px-8 md:ml-[260px]">
