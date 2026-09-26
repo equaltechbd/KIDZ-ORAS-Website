@@ -1,338 +1,160 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { Package, Plus, Search, Edit, Trash2, Tag, Filter, X, Percent, Image as ImageIcon, Layers } from "lucide-react";
-// Supabase Client ইমপোর্ট করা হলো
-import { createClient } from "@/utils/supabase/client";
+import { useState } from "react";
+import Link from "next/link";
+import { ShoppingCart, Star, Home, Store, User, ArrowLeft, Heart, Share2, Tag, CheckCircle2 } from "lucide-react";
+import toast, { Toaster } from "react-hot-toast";
 
-export default function ProductsPage() {
-  const [showAddModal, setShowAddModal] = useState(false);
-  const [showCategoryModal, setShowCategoryModal] = useState(false);
-  
-  // ডেমোর বদলে এখন Supabase থেকে ডেটা আসবে, তাই প্রথমে এটি ফাঁকা
-  const [categories, setCategories] = useState<any[]>([]);
-  const [newCategoryName, setNewCategoryName] = useState("");
-  const [isLoading, setIsLoading] = useState(true);
+export default function SingleProductPage() {
+  const [quantity, setQuantity] = useState(1);
+  const [isAdded, setIsAdded] = useState(false);
 
-  // Supabase ইনিশিয়ালাইজ করা
-  const supabase = createClient();
-
-  // পেজ লোড হওয়ার সাথে সাথে Supabase থেকে ক্যাটাগরি ফেচ করা
-  useEffect(() => {
-    fetchCategories();
-  }, []);
-
-  const fetchCategories = async () => {
-    setIsLoading(true);
-    const { data, error } = await supabase
-      .from('categories')
-      .select('*')
-      .order('created_at', { ascending: false });
-    
-    if (error) {
-      console.error("Error fetching categories:", error);
-    } else {
-      setCategories(data || []);
-    }
-    setIsLoading(false);
+  // ডামি প্রোডাক্ট ডেটা (পরবর্তীতে Supabase থেকে আসবে)
+  const product = {
+    id: "PRD-001",
+    name: "কিউট বেবি সুতি রমপার - প্রিমিয়াম কোয়ালিটি",
+    price: 600,
+    oldPrice: 700,
+    sold: "800+",
+    rating: 4.8,
+    reviews: 124,
+    inStock: true,
+    description: "আপনার সোনামণির জন্য আরামদায়ক এবং প্রিমিয়াম কোয়ালিটির সুতি রমপার। গরমের জন্য একদম পারফেক্ট। কালার গ্যারান্টি এবং সফট ফেব্রিক।",
+    features: ["১০০% সুতি কাপড়", "সফট ও আরামদায়ক", "সহজে ধোয়া যায়", "০-৬ মাসের বাচ্চার জন্য"],
+    image: "https://lh3.googleusercontent.com/aida-public/AB6AXuALG52l4H597Zus4CpnjmcgrWB9leinNtFPsCznTWr7puoP653tLm4mLY8ocqBA5kLsoHp97bYlnMLx1NDdeQxeuvp-paVAAh7QijRbSDO_LSf6nLa8j8lkRHBP67ghM13lQRHZ3203sba1Q8T1zqH7Ij1gZSyMEucuq2ZsL9WjvRbVtov32GG_HRrPoy5WBIZKk_L2zB8fmsD4u4vSvn4Dxi9MO-O6nTWqYnQP5-UitwjibcTjOB_v_KZktagBcaqypQ"
   };
 
-  // Supabase-এ নতুন ক্যাটাগরি সেভ করা
-  const handleAddCategory = async () => {
-    if (!newCategoryName.trim()) return;
-
-    const { data, error } = await supabase
-      .from('categories')
-      .insert([{ name: newCategoryName }])
-      .select();
-
-    if (error) {
-      console.error("Error adding category:", error);
-      alert("এই ক্যাটাগরি হয়তো আগে থেকেই আছে অথবা অন্য কোনো সমস্যা হয়েছে।");
-    } else if (data) {
-      setCategories([...categories, data[0]]);
-      setNewCategoryName("");
-    }
+  const handleAddToCart = () => {
+    // এখানে কার্টে অ্যাড করার লজিক বসবে
+    setIsAdded(true);
+    toast.success("প্রোডাক্ট কার্টে যোগ করা হয়েছে!");
+    setTimeout(() => setIsAdded(false), 2000);
   };
-
-  // Supabase থেকে ক্যাটাগরি ডিলিট করা
-  const handleDeleteCategory = async (id: string) => {
-    const { error } = await supabase
-      .from('categories')
-      .delete()
-      .eq('id', id);
-
-    if (error) {
-      console.error("Error deleting category:", error);
-    } else {
-      setCategories(categories.filter(cat => cat.id !== id));
-    }
-  };
-
-  // ডেমো প্রোডাক্ট লিস্ট (ডিজাইন ঠিক রাখার জন্য এটি আগের মতোই রাখলাম, পরের ধাপে এটিও কানেক্ট করব)
-  const [products] = useState([
-    {
-      id: "PRD-001",
-      name: "কিউট বেবি সুতি রমপার (০-৬ মাস)",
-      category: "Babies Clothes",
-      price: 800,
-      discountPrice: 600,
-      stock: 45,
-      image: "https://lh3.googleusercontent.com/aida-public/AB6AXuALG52l4H597Zus4CpnjmcgrWB9leinNtFPsCznTWr7puoP653tLm4mLY8ocqBA5kLsoHp97bYlnMLx1NDdeQxeuvp-paVAAh7QijRbSDO_LSf6nLa8j8lkRHBP67ghM13lQRHZ3203sba1Q8T1zqH7Ij1gZSyMEucuq2ZsL9WjvRbVtov32GG_HRrPoy5WBIZKk_L2zB8fmsD4u4vSvn4Dxi9MO-O6nTWqYnQP5-UitwjibcTjOB_v_KZktagBcaqypQ"
-    },
-    {
-      id: "PRD-002",
-      name: "জিওমেট্রিক ব্লক সেট ব্রেইন টিজার",
-      category: "Educational Toys",
-      price: 850,
-      discountPrice: null,
-      stock: 12,
-      image: "https://lh3.googleusercontent.com/aida-public/AB6AXuAiNVvtEG3oFqFg05B8OdeQL4kSQdpTXw1ZE3QSusVFz93Q5B2TGxYf-QVDsJDD2h2Q6qVy-Zu37DxTlFyRXMmQdM-yP-CQl4YtGbfh9jt7Xn9SlXIin0eOE3ZC0MaxxUSr1iidBpYP7hwKHFyMv7yWBG7rnM4l-m1SGdsCfpun3f_d2a3-Bx6mpVStn99mBeQqJPbYdxOfYygtY4lq26cLflC8X58WmBwRUoJYO_sfQlDNSGb2XQCG"
-    }
-  ]);
 
   return (
-    <div className="p-4 md:p-6 bg-gray-50 min-h-screen">
+    <div className="min-h-screen pb-32 bg-[#F8F9FA] text-[#221a15] font-sans">
+      <Toaster position="top-center" />
       
-      {/* Page Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
-            <Package className="text-[#E52565]" /> প্রোডাক্ট ম্যানেজমেন্ট
-          </h1>
-          <p className="text-gray-500 text-sm mt-1">আপনার স্টোরের সব প্রোডাক্ট এবং ডিসকাউন্ট কন্ট্রোল করুন</p>
-        </div>
-        
-        {/* Header Buttons */}
-        <div className="flex flex-col md:flex-row gap-3">
-          <button 
-            onClick={() => setShowCategoryModal(true)}
-            className="bg-white border border-gray-200 text-gray-700 hover:bg-gray-50 font-bold px-5 py-2.5 rounded-xl flex items-center gap-2 transition-colors shadow-sm justify-center"
-          >
-            <Layers size={20} /> ক্যাটাগরি
+      {/* Simple Header with Back Button */}
+      <nav className="fixed top-0 left-0 w-full z-50 flex items-center justify-between px-4 py-3 bg-white/95 backdrop-blur-md shadow-sm border-b border-gray-100">
+        <Link href="/" className="p-2 -ml-2 text-gray-600 hover:text-[#E52565] transition-colors rounded-full hover:bg-gray-50">
+          <ArrowLeft size={24} />
+        </Link>
+        <h1 className="text-base font-bold text-gray-800 line-clamp-1 flex-1 text-center px-4">প্রোডাক্ট বিস্তারিত</h1>
+        <div className="flex gap-2 shrink-0">
+          <button className="p-2 text-gray-600 hover:text-[#E52565] transition-colors rounded-full hover:bg-gray-50">
+            <Share2 size={22} />
           </button>
-          <button 
-            onClick={() => setShowAddModal(true)}
-            className="bg-[#E52565] hover:bg-[#E52565]/90 text-white font-bold px-5 py-2.5 rounded-xl flex items-center gap-2 transition-colors shadow-sm justify-center"
-          >
-            <Plus size={20} /> নতুন প্রোডাক্ট
-          </button>
+          <Link href="/cart" className="p-2 text-gray-600 hover:text-[#E52565] transition-colors rounded-full hover:bg-gray-50 relative">
+            <ShoppingCart size={22} />
+            <span className="absolute top-1 right-1 bg-[#E52565] text-white text-[10px] font-bold w-4 h-4 flex items-center justify-center rounded-full">2</span>
+          </Link>
         </div>
-      </div>
+      </nav>
 
-      {/* Search & Filter Bar */}
-      <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex flex-col md:flex-row gap-4 mb-6">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
-          <input 
-            type="text" 
-            placeholder="প্রোডাক্টের নাম দিয়ে খুঁজুন..." 
-            className="w-full pl-10 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:bg-white focus:border-[#E52565] outline-none transition-colors"
-          />
-        </div>
-        <div className="flex gap-4">
-          <select className="bg-gray-50 border border-gray-200 rounded-lg px-4 py-2 outline-none focus:border-[#E52565] text-gray-700 font-medium">
-            <option>সব ক্যাটাগরি</option>
-            {categories.map(cat => (
-              <option key={cat.id} value={cat.name}>{cat.name}</option>
-            ))}
-          </select>
-          <button className="bg-gray-100 text-gray-700 px-4 py-2 rounded-lg font-bold flex items-center gap-2 hover:bg-gray-200 transition-colors">
-            <Filter size={18} /> ফিল্টার
+      <main className="pt-[60px]">
+        {/* Product Image Section */}
+        <div className="w-full bg-white relative aspect-square md:aspect-[4/3] lg:aspect-[21/9] max-h-[500px] flex justify-center items-center overflow-hidden">
+          <img src={product.image} alt={product.name} className="w-full h-full object-cover mix-blend-multiply sm:object-contain" />
+          <button className="absolute top-4 right-4 p-3 bg-white/80 backdrop-blur rounded-full text-gray-400 hover:text-[#E52565] hover:bg-white transition-all shadow-sm">
+            <Heart size={24} />
           </button>
         </div>
-      </div>
 
-      {/* Products Table (Original Design) */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse">
-            <thead>
-              <tr className="bg-gray-50 border-b border-gray-100 text-gray-600 text-sm">
-                <th className="p-4 font-semibold">প্রোডাক্টের ছবি ও নাম</th>
-                <th className="p-4 font-semibold">ক্যাটাগরি</th>
-                <th className="p-4 font-semibold">মূল্য ও ডিসকাউন্ট</th>
-                <th className="p-4 font-semibold text-center">স্টক</th>
-                <th className="p-4 font-semibold text-right">অ্যাকশন</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100">
-              {products.map((product) => (
-                <tr key={product.id} className="hover:bg-gray-50/50 transition-colors">
-                  <td className="p-4">
-                    <div className="flex items-center gap-3">
-                      <div className="w-12 h-12 rounded-lg bg-gray-100 overflow-hidden border border-gray-200 shrink-0">
-                        <img src={product.image} alt={product.name} className="w-full h-full object-cover mix-blend-multiply p-1" />
-                      </div>
-                      <div>
-                        <div className="font-bold text-gray-900 line-clamp-1">{product.name}</div>
-                        <div className="text-xs text-gray-500 mt-0.5">ID: {product.id}</div>
-                      </div>
-                    </div>
-                  </td>
-                  <td className="p-4">
-                    <span className="bg-blue-50 text-blue-700 px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1 w-max">
-                      <Tag size={12} /> {product.category}
-                    </span>
-                  </td>
-                  <td className="p-4">
-                    {product.discountPrice ? (
-                      <div>
-                        <span className="font-bold text-[#E52565] text-lg">৳{product.discountPrice}</span>
-                        <span className="text-gray-400 line-through text-sm ml-2">৳{product.price}</span>
-                        <div className="text-[10px] bg-red-100 text-red-600 font-bold px-1.5 py-0.5 rounded w-max mt-1">DISCOUNTED</div>
-                      </div>
-                    ) : (
-                      <span className="font-bold text-gray-800 text-lg">৳{product.price}</span>
-                    )}
-                  </td>
-                  <td className="p-4 text-center">
-                    <span className={`font-bold px-3 py-1 rounded-full text-sm ${product.stock > 20 ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-700'}`}>
-                      {product.stock} পিস
-                    </span>
-                  </td>
-                  <td className="p-4 text-right">
-                    <div className="flex justify-end gap-2">
-                      <button className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"><Edit size={18} /></button>
-                      <button className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors"><Trash2 size={18} /></button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      {/* 🟢 CATEGORY MANAGEMENT MODAL (Supabase Connected) 🟢 */}
-      {showCategoryModal && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl relative animate-in fade-in zoom-in duration-200">
-            <div className="border-b border-gray-100 p-5 flex justify-between items-center bg-gray-50 rounded-t-2xl">
-              <h2 className="text-lg font-bold text-gray-900 flex items-center gap-2">
-                <Layers className="text-[#E52565]" /> ক্যাটাগরি ম্যানেজমেন্ট
-              </h2>
-              <button onClick={() => setShowCategoryModal(false)} className="p-2 bg-gray-200 hover:bg-red-100 hover:text-red-600 rounded-full transition-colors">
-                <X size={18} />
-              </button>
+        <div className="max-w-4xl mx-auto md:mt-6 md:px-5">
+          {/* Main Info Section */}
+          <div className="bg-white p-5 md:rounded-2xl md:shadow-sm md:border md:border-gray-100 mb-2 md:mb-6">
+            <div className="flex items-center gap-2 mb-2">
+              <span className="bg-[#E52565] text-white text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-wider">Top Selling</span>
+              <div className="flex items-center gap-1 text-[#F49547]">
+                <Star size={14} fill="currentColor" />
+                <span className="text-xs font-bold text-gray-700">{product.rating}</span>
+                <span className="text-xs text-gray-500">({product.reviews} reviews)</span>
+              </div>
             </div>
             
-            <div className="p-5">
-              {/* Add New Category */}
-              <div className="flex gap-2 mb-6">
-                <input 
-                  type="text" 
-                  value={newCategoryName}
-                  onChange={(e) => setNewCategoryName(e.target.value)}
-                  placeholder="নতুন ক্যাটাগরির নাম লিখুন..." 
-                  className="flex-1 bg-gray-50 border border-gray-200 rounded-lg px-4 py-2.5 focus:bg-white focus:border-[#E52565] outline-none"
-                />
-                <button 
-                  onClick={handleAddCategory}
-                  className="bg-gray-900 text-white px-5 py-2.5 rounded-lg font-bold hover:bg-black transition-colors flex items-center gap-1"
-                >
-                  <Plus size={18}/> অ্যাড
-                </button>
-              </div>
+            <h1 className="text-lg md:text-2xl font-bold text-gray-900 leading-snug mb-3">
+              {product.name}
+            </h1>
+            
+            <div className="flex items-end gap-3 mb-4">
+              <span className="text-3xl font-bold text-[#E52565]">৳{product.price}</span>
+              {product.oldPrice && (
+                <span className="text-lg text-gray-400 line-through mb-1">৳{product.oldPrice}</span>
+              )}
+              <span className="text-xs font-bold text-green-600 bg-green-50 px-2 py-1 rounded ml-auto mb-1 flex items-center gap-1">
+                <CheckCircle2 size={12} /> {product.inStock ? 'In Stock' : 'Out of Stock'}
+              </span>
+            </div>
 
-              {/* Category List */}
-              <div className="space-y-2 max-h-[40vh] overflow-y-auto pr-1 custom-scrollbar">
-                {isLoading ? (
-                  <p className="text-center text-gray-500 py-4 text-sm animate-pulse">লোড হচ্ছে...</p>
-                ) : categories.length === 0 ? (
-                  <p className="text-center text-gray-500 py-4 text-sm">কোনো ক্যাটাগরি নেই</p>
-                ) : (
-                  categories.map(cat => (
-                    <div key={cat.id} className="flex justify-between items-center bg-white border border-gray-100 p-3 rounded-xl shadow-sm hover:border-[#E52565]/30 transition-colors">
-                      <span className="font-bold text-gray-700 flex items-center gap-2">
-                        <div className="w-2 h-2 rounded-full bg-[#E52565]"></div> {cat.name}
-                      </span>
-                      <button 
-                        onClick={() => handleDeleteCategory(cat.id)}
-                        className="text-red-400 p-1.5 hover:bg-red-50 hover:text-red-600 rounded-md transition-colors"
-                      >
-                        <Trash2 size={16}/>
-                      </button>
-                    </div>
-                  ))
-                )}
+            <div className="flex items-center gap-4 py-4 border-t border-gray-100">
+              <span className="text-sm font-bold text-gray-700">পরিমাণ:</span>
+              <div className="flex items-center bg-gray-50 rounded-lg border border-gray-200">
+                <button onClick={() => setQuantity(Math.max(1, quantity - 1))} className="w-10 h-10 flex items-center justify-center text-gray-600 hover:text-[#E52565] font-bold text-lg transition-colors">-</button>
+                <span className="w-10 h-10 flex items-center justify-center font-bold text-gray-900 bg-white border-x border-gray-200">{quantity}</span>
+                <button onClick={() => setQuantity(quantity + 1)} className="w-10 h-10 flex items-center justify-center text-gray-600 hover:text-[#E52565] font-bold text-lg transition-colors">+</button>
               </div>
             </div>
           </div>
-        </div>
-      )}
 
-      {/* 🟢 ADD PRODUCT MODAL (Original Design Kept Intact) 🟢 */}
-      {showAddModal && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl w-full max-w-3xl max-h-[90vh] overflow-y-auto shadow-2xl relative animate-in fade-in zoom-in duration-200">
-            <div className="sticky top-0 bg-white border-b border-gray-100 p-5 flex justify-between items-center z-10">
-              <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2">
-                <Package className="text-[#E52565]" /> নতুন প্রোডাক্ট যোগ করুন
-              </h2>
-              <button onClick={() => setShowAddModal(false)} className="p-2 bg-gray-100 hover:bg-red-100 hover:text-red-600 rounded-full transition-colors">
-                <X size={20} />
-              </button>
-            </div>
-
-            <div className="p-5 space-y-6">
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-bold text-gray-700 mb-1.5">প্রোডাক্টের নাম *</label>
-                  <input type="text" placeholder="যেমন: কিউট বেবি সুতি রমপার" className="w-full bg-gray-50 border border-gray-200 rounded-lg px-4 py-2.5 focus:bg-white focus:border-[#E52565] outline-none" />
-                </div>
-                
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-bold text-gray-700 mb-1.5">ক্যাটাগরি সিলেক্ট করুন *</label>
-                    <select className="w-full bg-gray-50 border border-gray-200 rounded-lg px-4 py-2.5 focus:bg-white focus:border-[#E52565] outline-none text-gray-700 font-medium">
-                      {/* ডায়নামিক ক্যাটাগরি লিস্ট */}
-                      {categories.map(cat => (
-                        <option key={cat.id} value={cat.name}>{cat.name}</option>
-                      ))}
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-bold text-gray-700 mb-1.5">স্টক (কয় পিস আছে?) *</label>
-                    <input type="number" placeholder="যেমন: 50" className="w-full bg-gray-50 border border-gray-200 rounded-lg px-4 py-2.5 focus:bg-white focus:border-[#E52565] outline-none" />
-                  </div>
-                </div>
-              </div>
-
-              <div className="bg-red-50/50 border border-red-100 rounded-xl p-5">
-                <h3 className="font-bold text-red-800 mb-4 flex items-center gap-2"><Percent size={18} /> মূল্য এবং ডিসকাউন্ট</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-bold text-gray-700 mb-1.5">রেগুলার প্রাইস (৳) *</label>
-                    <input type="number" placeholder="যেমন: 800" className="w-full bg-white border border-gray-200 rounded-lg px-4 py-2.5 focus:border-[#E52565] outline-none" />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-bold text-[#E52565] mb-1.5">ডিসকাউন্ট প্রাইস (অপশনাল)</label>
-                    <input type="number" placeholder="ছাড় দেওয়ার পর দাম (যেমন: 600)" className="w-full bg-white border border-[#E52565]/30 rounded-lg px-4 py-2.5 focus:border-[#E52565] outline-none" />
-                  </div>
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-bold text-gray-700 mb-1.5">প্রোডাক্টের ছবি (URL)</label>
-                <div className="flex gap-2">
-                  <input type="text" placeholder="https://..." className="flex-1 bg-gray-50 border border-gray-200 rounded-lg px-4 py-2.5 focus:bg-white focus:border-[#E52565] outline-none" />
-                  <button className="bg-gray-200 text-gray-700 px-4 py-2.5 rounded-lg font-bold hover:bg-gray-300 transition-colors flex items-center gap-2">
-                    <ImageIcon size={18}/> আপলোড
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            <div className="border-t border-gray-100 p-5 flex justify-end gap-3 bg-gray-50 rounded-b-2xl">
-              <button onClick={() => setShowAddModal(false)} className="px-6 py-2.5 rounded-xl font-bold text-gray-600 hover:bg-gray-200 transition-colors">বাতিল করুন</button>
-              <button className="bg-[#E52565] text-white px-8 py-2.5 rounded-xl font-bold hover:bg-[#E52565]/90 transition-colors shadow-md">পাবলিশ করুন</button>
-            </div>
-
+          {/* Details Section */}
+          <div className="bg-white p-5 md:rounded-2xl md:shadow-sm md:border md:border-gray-100 mb-2 md:mb-6">
+            <h3 className="text-base font-bold text-gray-900 mb-3 flex items-center gap-2">
+              <Tag size={18} className="text-[#E52565]" /> প্রোডাক্টের বিবরণ
+            </h3>
+            <p className="text-sm text-gray-600 leading-relaxed mb-4">
+              {product.description}
+            </p>
+            <ul className="space-y-2">
+              {product.features.map((feature, idx) => (
+                <li key={idx} className="flex items-start gap-2 text-sm text-gray-700">
+                  <div className="mt-1 w-1.5 h-1.5 rounded-full bg-[#E52565] shrink-0"></div>
+                  {feature}
+                </li>
+              ))}
+            </ul>
           </div>
         </div>
-      )}
+      </main>
 
+      {/* Floating Action Bar (Add to Cart / Buy Now) */}
+      <div className="fixed bottom-0 left-0 w-full z-50 bg-white border-t border-gray-100 p-3 md:p-4 pb-safe shadow-[0_-4px_20px_rgba(0,0,0,0.05)] md:hidden">
+        <div className="flex gap-3 max-w-4xl mx-auto">
+          <button 
+            onClick={handleAddToCart}
+            className={`flex-1 py-3.5 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all ${
+              isAdded ? 'bg-green-500 text-white' : 'bg-[#FFF0F5] text-[#E52565] hover:bg-[#ffe4ee]'
+            }`}
+          >
+            {isAdded ? <CheckCircle2 size={18} /> : <ShoppingCart size={18} />}
+            {isAdded ? 'যোগ হয়েছে' : 'কার্টে রাখুন'}
+          </button>
+          <Link href="/checkout" className="flex-1 bg-[#E52565] text-white py-3.5 rounded-xl font-bold text-sm flex items-center justify-center shadow-lg shadow-[#E52565]/20 hover:bg-[#cc1f57] transition-all">
+            অর্ডার করুন
+          </Link>
+        </div>
+      </div>
+
+      {/* Desktop Fixed Action Bar (Hidden on mobile) */}
+      <div className="hidden md:block fixed bottom-0 left-0 w-full z-50 bg-white/90 backdrop-blur-md border-t border-gray-100 py-4 shadow-[0_-10px_30px_rgba(0,0,0,0.05)]">
+        <div className="max-w-4xl mx-auto px-5 flex items-center justify-between">
+          <div className="flex items-center gap-4">
+             <img src={product.image} alt="" className="w-12 h-12 rounded object-cover border border-gray-100" />
+             <div>
+               <p className="font-bold text-gray-900 text-sm line-clamp-1">{product.name}</p>
+               <p className="text-[#E52565] font-bold">৳{product.price}</p>
+             </div>
+          </div>
+          <div className="flex gap-3 w-[400px]">
+            <button onClick={handleAddToCart} className="flex-1 bg-[#FFF0F5] text-[#E52565] hover:bg-[#ffe4ee] py-3 rounded-xl font-bold transition-all flex justify-center items-center gap-2">
+              <ShoppingCart size={18}/> কার্টে রাখুন
+            </button>
+            <Link href="/checkout" className="flex-1 bg-[#E52565] text-white py-3 rounded-xl font-bold flex justify-center items-center shadow-lg shadow-[#E52565]/20 hover:bg-[#cc1f57] transition-all">
+              অর্ডার করুন
+            </Link>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
