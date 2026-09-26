@@ -8,6 +8,7 @@ import { Menu, Bell, Search, Filter, Plus, Edit, Trash2, MoreVertical, Image as 
 
 // Product Type matching your database schema
 type Product = {
+  description?: string;
   id: string;
   name: string;
   category: string;
