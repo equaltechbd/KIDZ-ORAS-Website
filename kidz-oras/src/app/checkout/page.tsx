@@ -1,30 +1,36 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/utils/supabase/client";
 import { toast, Toaster } from "react-hot-toast";
-import { ShoppingBag, CreditCard, MapPin, Phone, User, CheckCircle2 } from "lucide-react";
+import { ShoppingBag, CreditCard, MapPin, Phone, User, CheckCircle2, ArrowLeft, Loader2 } from "lucide-react";
+import Link from "next/link";
 
 export default function CheckoutPage() {
   const router = useRouter();
   const supabase = createClient();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  
+  // ডাইনামিক কার্ট স্টেট
+  const [cart, setCart] = useState<any[]>([]);
+  const [isLoadingCart, setIsLoadingCart] = useState(true);
 
-  // ডামি কার্ট ডেটা (আপাতত টেস্টিংয়ের জন্য)
-  const cart = [
-    {
-      id: "PRD-001",
-      name: "কিউট বেবি সুতি রমপার - প্রিমিয়াম",
-      price: 600,
-      quantity: 1,
-      variant: "12 Months / Red",
-      image: "https://lh3.googleusercontent.com/aida-public/AB6AXuALG52l4H597Zus4CpnjmcgrWB9leinNtFPsCznTWr7puoP653tLm4mLY8ocqBA5kLsoHp97bYlnMLx1NDdeQxeuvp-paVAAh7QijRbSDO_LSf6nLa8j8lkRHBP67ghM13lQRHZ3203sba1Q8T1zqH7Ij1gZSyMEucuq2ZsL9WjvRbVtov32GG_HRrPoy5WBIZKk_L2zB8fmsD4u4vSvn4Dxi9MO-O6nTWqYnQP5-UitwjibcTjOB_v_KZktagBcaqypQ"
+  // পেজ লোড হওয়ার পর লোকাল স্টোরেজ থেকে কার্টের ডেটা নিয়ে আসা
+  useEffect(() => {
+    const savedCart = localStorage.getItem('cart'); // আপনার কার্টের স্টোরেজ কী (Key) যদি ভিন্ন হয়, তবে এখানে বসাবেন
+    if (savedCart) {
+      try {
+        setCart(JSON.parse(savedCart));
+      } catch (e) {
+        console.error("Failed to parse cart", e);
+      }
     }
-  ];
+    setIsLoadingCart(false);
+  }, []);
 
-  const subtotal = cart.reduce((total, item) => total + item.price * item.quantity, 0);
-  const deliveryCharge = 60; // ঢাকার ভেতরে
+  const subtotal = cart.reduce((total, item) => total + (item.price * item.quantity), 0);
+  const deliveryCharge = 60; // ঢাকার ভেতরে ডিফল্ট
   const totalAmount = subtotal + deliveryCharge;
 
   const [formData, setFormData] = useState({
@@ -40,6 +46,10 @@ export default function CheckoutPage() {
 
   const handleCheckout = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (cart.length === 0) {
+      toast.error("আপনার কার্ট খালি!");
+      return;
+    }
     setIsSubmitting(true);
 
     try {
@@ -77,11 +87,17 @@ export default function CheckoutPage() {
         .from('orders')
         .insert([{
           customer_id: customerId,
+          order_number: `ORD-${Math.floor(100000 + Math.random() * 900000)}`, // Generate random order number
+          customer_name: formData.name,
+          customer_phone: formData.phone,
+          customer_address: formData.address,
           subtotal: subtotal,
           delivery_charge: deliveryCharge,
           total_amount: totalAmount,
           shipping_address: formData.address,
-          customer_notes: formData.notes
+          customer_notes: formData.notes,
+          status: 'Pending',
+          payment_method: 'COD'
         }])
         .select()
         .single();
@@ -91,11 +107,11 @@ export default function CheckoutPage() {
       // ৩. অর্ডারের আইটেমগুলো সেভ করা
       const orderItems = cart.map(item => ({
         order_id: orderData.id,
-        product_id: item.id,
+        product_id: item.id || item.product_id,
         product_name: item.name,
         price: item.price,
         quantity: item.quantity,
-        variant: item.variant
+        variant: item.variant || null
       }));
 
       const { error: itemsError } = await supabase
@@ -104,9 +120,11 @@ export default function CheckoutPage() {
 
       if (itemsError) throw itemsError;
 
-      // সাকসেস হলে কনফার্মেশন পেজে পাঠানো
+      // ৪. সাকসেস হলে কার্ট ক্লিয়ার করে কনফার্মেশন পেজে পাঠানো
+      localStorage.removeItem('cart'); // অর্ডার প্লেস হওয়ার পর কার্ট খালি করে দেওয়া
+      
       toast.success("অর্ডার সফলভাবে সম্পন্ন হয়েছে!");
-      router.push(`/order-success?id=${orderData.id}`);
+      router.push(`/success?id=${orderData.id}`);
 
     } catch (error) {
       console.error("Checkout Error:", error);
@@ -116,13 +134,37 @@ export default function CheckoutPage() {
     }
   };
 
+  if (isLoadingCart) {
+    return (
+      <div className="min-h-screen bg-[#050505] flex items-center justify-center">
+        <Loader2 className="w-8 h-8 text-[#F49547] animate-spin" />
+      </div>
+    );
+  }
+
+  // কার্ট খালি থাকলে এই পেজ দেখাবে
+  if (cart.length === 0) {
+    return (
+      <div className="bg-[#050505] text-[#e5e2e1] min-h-screen font-sans flex flex-col items-center justify-center p-4">
+        <ShoppingBag size={64} className="text-gray-600 mb-6" />
+        <h2 className="text-2xl font-bold text-white mb-2">আপনার কার্ট খালি</h2>
+        <p className="text-gray-400 mb-8 text-center">চেকআউট করার জন্য আগে কিছু প্রোডাক্ট কার্টে যোগ করুন।</p>
+        <Link href="/shop" className="flex items-center gap-2 bg-[#F49547] hover:bg-[#d87c33] text-white font-bold py-3 px-8 rounded-xl transition-all shadow-lg shadow-[#F49547]/20">
+          <ArrowLeft size={18} /> শপিং চালিয়ে যান
+        </Link>
+      </div>
+    );
+  }
+
   return (
     <div className="bg-[#050505] text-[#e5e2e1] min-h-screen font-sans selection:bg-[#F49547]/30">
       <Toaster position="top-center" />
       
       {/* Simple Header */}
       <header className="bg-[#0a0a0a] border-b border-[#1f1f1f] h-16 flex items-center justify-center sticky top-0 z-50">
-        <h1 className="text-xl font-bold text-white tracking-wide">KIDZ ORAS</h1>
+        <Link href="/">
+          <h1 className="text-xl font-bold text-white tracking-wide">KIDZ ORAS</h1>
+        </Link>
       </header>
 
       <main className="max-w-6xl mx-auto px-4 py-8 md:py-12">
@@ -221,12 +263,19 @@ export default function CheckoutPage() {
               </h3>
 
               <div className="space-y-4 mb-6">
-                {cart.map((item) => (
-                  <div key={item.id} className="flex gap-4 border-b border-[#1f1f1f] pb-4">
-                    <img src={item.image} alt={item.name} className="w-16 h-16 rounded-xl object-cover border border-[#2a2a2a]" />
+                {cart.map((item, index) => (
+                  <div key={index} className="flex gap-4 border-b border-[#1f1f1f] pb-4">
+                    {item.image || item.image_url ? (
+                      <img src={item.image || item.image_url} alt={item.name} className="w-16 h-16 rounded-xl object-cover border border-[#2a2a2a]" />
+                    ) : (
+                      <div className="w-16 h-16 rounded-xl bg-[#1a1a1a] border border-[#2a2a2a] flex items-center justify-center">
+                        <ShoppingBag size={20} className="text-gray-600" />
+                      </div>
+                    )}
+                    
                     <div className="flex-1">
                       <h4 className="text-sm font-semibold text-white line-clamp-2">{item.name}</h4>
-                      <p className="text-xs text-gray-500 mt-1">{item.variant} • {item.quantity} পিস</p>
+                      <p className="text-xs text-gray-500 mt-1">{item.variant ? `${item.variant} • ` : ''}{item.quantity} পিস</p>
                       <p className="text-sm font-bold text-[#F49547] mt-1">৳{item.price}</p>
                     </div>
                   </div>

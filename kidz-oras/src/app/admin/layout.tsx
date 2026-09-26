@@ -3,6 +3,16 @@
 import { useState } from "react";
 import Sidebar from "@/components/admin/Sidebar";
 import AdminHeader from "@/components/admin/AdminHeader";
+import OrderAlert from "@/components/admin/OrderAlert";
+
+export default function AdminLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <>
+      <OrderAlert />
+      {children}
+    </>
+  );
+}
 
 export default function AdminLayout({
   children,

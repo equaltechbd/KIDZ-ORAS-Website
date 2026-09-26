@@ -1,71 +1,185 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Sidebar from "@/components/admin/Sidebar";
-import { 
-  Menu, Bell, Search, Filter, Plus, Edit, Trash2, MoreVertical, 
-  Image as ImageIcon, Copy, CheckCircle2, ChevronDown, Power, X, Upload, Save
-} from "lucide-react";
+import { createClient } from "@/utils/supabase/client";
+import { toast, Toaster } from "react-hot-toast";
+import { Menu, Bell, Search, Filter, Plus, Edit, Trash2, MoreVertical, Image as ImageIcon, Copy, CheckCircle2, ChevronDown, Power, X, Upload, Save, Loader2 } from "lucide-react";
 
-// --- Mock Data ---
-const mockProducts = [
-  { id: "PRD-001", name: "কিউট বেবি সুতি রমপার - প্রিমিয়াম", category: "পোশাক", price: "৳৬০০", stock: 45, status: "In Stock", warehouse: "মিরপুর ওয়্যারহাউজ", performance: 92, img: "https://lh3.googleusercontent.com/aida-public/AB6AXuALG52l4H597Zus4CpnjmcgrWB9leinNtFPsCznTWr7puoP653tLm4mLY8ocqBA5kLsoHp97bYlnMLx1NDdeQxeuvp-paVAAh7QijRbSDO_LSf6nLa8j8lkRHBP67ghM13lQRHZ3203sba1Q8T1zqH7Ij1gZSyMEucuq2ZsL9WjvRbVtov32GG_HRrPoy5WBIZKk_L2zB8fmsD4u4vSvn4Dxi9MO-O6nTWqYnQP5-UitwjibcTjOB_v_KZktagBcaqypQ" },
-  { id: "PRD-002", name: "জিওমেট্রিক ব্লক সেট", category: "খেলনা", price: "৳৮৫০", stock: 12, status: "Low Stock", warehouse: "উত্তরা হাব", performance: 65, img: "https://lh3.googleusercontent.com/aida-public/AB6AXuAiNVvtEG3oFqFg05B8OdeQL4kSQdpTXw1ZE3QSusVFz93Q5B2TGxYf-QVDsJDD2h2Q6qVy-Zu37DxTlFyRXMmQdM-yP-CQl4YtGbfh9jt7Xn9SlXIin0eOE3ZC0MaxxUSr1iidBpYP7hwKHFyMv7yWBG7rnM4l-m1SGdsCfpun3f_d2a3-Bx6mpVStn99mBeQqJPbYdxOfYygtY4lq26cLflC8X58WmBwRUoJYO_sfQlDNSGb2XQCG" },
-  { id: "PRD-003", name: "শেপ সর্টার বক্স লার্নিং টয়", category: "খেলনা", price: "৳৯৯০", stock: 0, status: "Out of Stock", warehouse: "মিরপুর ওয়্যারহাউজ", performance: 35, img: "https://lh3.googleusercontent.com/aida-public/AB6AXuAbypmutJAUoTsfZiwVaqynUq38i2PH7x9Oxl2K1M3kd9u69KwQK7c5xQnPUHjgGqrZ7vmCr0Lhp0jLKh8FekiuRRFFufabjPCVE2_cxefLObbMjrxebD7zZRIzIJrLyPraqPrUnF7F_mArtcTb4I2--R7rq_LvAQGcc4Hh1f536EXaxpmYV2IG9wOZNXkedK_7sq8dMRsvuaQL6b5Ph36DYZZw-KWNDB_yJJ9A130x0Zj0kiEdA8IL" },
-  { id: "PRD-004", name: "উডেন মন্টিসরি ফিশিং টয়", category: "খেলনা", price: "৳৬৫০", stock: 120, status: "In Stock", warehouse: "সাভার গোডাউন", performance: 88, img: "https://lh3.googleusercontent.com/aida-public/AB6AXuDN7P6f248ZyWilkiqmtHN332jWtuKfRNW5Pb02o5y9FmSlXEUqaNHCDMMqoUADbrXEFxcE2nS9iQWu2MSO77j7IWBt30Z_0xkEnOThOFXS3AwPLh-Mqji-lDYgfkOdZ2mlWjRT4meVrLnUzzFtwsPilFHMhoWUX4LSExj7tj4fjd0-8mMRy5B038_dvRIcbg2o9jqFuAV7lQnoZq-6uvvOKBeqE1m45Moj8XYZHr7A4H2QZkqmHSG3" },
-  { id: "PRD-005", name: "সিলিকন বেবি টিদার", category: "এসেনশিয়ালস", price: "৳৩৫০", stock: 5, status: "Low Stock", warehouse: "মিরপুর ওয়্যারহাউজ", performance: 75, img: null }
-];
+// Product Type matching your database schema
+type Product = {
+  id: string;
+  name: string;
+  category: string;
+  price: number;
+  discount_price: number | null;
+  stock: number;
+  image_url: string;
+  status: string;
+};
 
-export default function AdminProductsPage() {
+export default function AdminProductsPage() { 
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  
-  // Popups & Modals State
-  const [isFilterOpen, setIsFilterOpen] = useState(false);
-  const [isCategoryOpen, setIsCategoryOpen] = useState(false);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Popups & Modals State 
+  const [isFilterOpen, setIsFilterOpen] = useState(false); 
+  const [isCategoryOpen, setIsCategoryOpen] = useState(false); 
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
-  
-  // Drawer State
-  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
-  const [editingProduct, setEditingProduct] = useState<typeof mockProducts[0] | null>(null);
-  
-  // Copy State
+
+  // Drawer State 
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false); 
+  const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Form State
+  const [formData, setFormData] = useState({
+    name: "",
+    category: "পোশাক (Clothing)",
+    price: "",
+    stock: "",
+    image_url: "",
+    description: ""
+  });
+
+  // Copy State 
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
-  const getStockBadge = (status: string) => {
-    switch(status) {
-      case "In Stock": return <span className="inline-block px-2.5 py-1 rounded-md bg-emerald-500/10 text-emerald-400 text-[11px] font-bold border border-emerald-500/20">In Stock</span>;
-      case "Low Stock": return <span className="inline-block px-2.5 py-1 rounded-md bg-yellow-500/10 text-yellow-500 text-[11px] font-bold border border-yellow-500/20">Low Stock</span>;
-      case "Out of Stock": return <span className="inline-block px-2.5 py-1 rounded-md bg-red-500/10 text-red-400 text-[11px] font-bold border border-red-500/20">Out of Stock</span>;
-      default: return <span className="px-2.5 py-1 rounded-md bg-gray-500/10 text-gray-400 text-[11px] font-bold border border-gray-500/20">{status}</span>;
+  const supabase = createClient();
+
+  // ১. ডেটাবেস থেকে প্রোডাক্ট লোড করা
+  const fetchProducts = async () => {
+    setIsLoading(true);
+    const { data, error } = await supabase
+      .from("products")
+      .select("*")
+      .order("created_at", { ascending: false });
+
+    if (error) {
+      console.error("Error fetching products:", error);
+      toast.error("প্রোডাক্ট লোড করতে সমস্যা হয়েছে!");
+    } else {
+      setProducts(data || []);
     }
+    setIsLoading(false);
   };
 
-  const getPerformanceColor = (perf: number) => {
-    if (perf >= 70) return "bg-emerald-500 shadow-emerald-500/50";
-    if (perf >= 40) return "bg-yellow-500 shadow-yellow-500/50";
-    return "bg-red-500 shadow-red-500/50";
-  };
+  useEffect(() => {
+    fetchProducts();
+  }, []);
 
-  const handleCopy = (product: typeof mockProducts[0]) => {
-    const text = `📦 Product: ${product.name}\n🔖 Code: ${product.id}\n📁 Category: ${product.category}\n💰 Price: ${product.price}\n📊 Status: ${product.status}`;
-    navigator.clipboard.writeText(text);
-    setCopiedId(product.id);
-    setTimeout(() => setCopiedId(null), 2000);
-  };
+  // ২. নতুন প্রোডাক্ট অ্যাড করা বা আপডেট করা
+  const handleSaveProduct = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSubmitting(true);
 
-  const openAddProduct = () => {
-    setEditingProduct(null);
-    setIsDrawerOpen(true);
-  };
+    const productData = {
+      name: formData.name,
+      category: formData.category,
+      price: parseFloat(formData.price),
+      stock: parseInt(formData.stock),
+      image_url: formData.image_url,
+      description: formData.description,
+      status: parseInt(formData.stock) > 10 ? 'In Stock' : parseInt(formData.stock) > 0 ? 'Low Stock' : 'Out of Stock'
+    };
 
-  const openEditProduct = (product: typeof mockProducts[0]) => {
-    setEditingProduct(product);
-    setIsDrawerOpen(true);
-  };
-
-  return (
-    <div className="bg-[#050505] text-[#e5e2e1] min-h-screen font-sans selection:bg-[#F49547]/30 flex">
+    if (editingProduct) {
+      // Update existing product
+      const { error } = await supabase
+        .from("products")
+        .update(productData)
+        .eq("id", editingProduct.id);
+        
+      if (error) {
+        toast.error("আপডেট করতে ব্যর্থ হয়েছে!");
+      } else {
+        toast.success("প্রোডাক্ট আপডেট হয়েছে!");
+        setIsDrawerOpen(false);
+        fetchProducts();
+      }
+    } else {
+      // Insert new product
+      const { error } = await supabase.from("products").insert([productData]);
       
+      if (error) {
+        toast.error("প্রোডাক্ট অ্যাড করতে ব্যর্থ হয়েছে!");
+      } else {
+        toast.success("নতুন প্রোডাক্ট যোগ করা হয়েছে!");
+        setIsDrawerOpen(false);
+        fetchProducts();
+      }
+    }
+    setIsSubmitting(false);
+  };
+
+  // ৩. প্রোডাক্ট ডিলিট করা
+  const handleDelete = async (id: string) => {
+    const confirmDelete = window.confirm("আপনি কি নিশ্চিত যে এই প্রোডাক্টটি ডিলিট করতে চান?");
+    if (!confirmDelete) return;
+
+    const { error } = await supabase.from("products").delete().eq("id", id);
+
+    if (error) {
+      toast.error("ডিলিট করতে সমস্যা হয়েছে!");
+    } else {
+      toast.success("প্রোডাক্ট ডিলিট করা হয়েছে!");
+      setProducts(products.filter(p => p.id !== id)); 
+    }
+    setActiveDropdown(null);
+  };
+
+  const getStockBadge = (status: string) => { 
+    switch(status) { 
+      case "In Stock": return <span className="inline-block px-2.5 py-1 rounded-md bg-emerald-500/10 text-emerald-400 text-[11px] font-bold border border-emerald-500/20">In Stock</span>; 
+      case "Low Stock": return <span className="inline-block px-2.5 py-1 rounded-md bg-yellow-500/10 text-yellow-500 text-[11px] font-bold border border-yellow-500/20">Low Stock</span>; 
+      case "Out of Stock": return <span className="inline-block px-2.5 py-1 rounded-md bg-red-500/10 text-red-400 text-[11px] font-bold border border-red-500/20">Out of Stock</span>; 
+      default: return <span className="px-2.5 py-1 rounded-md bg-gray-500/10 text-gray-400 text-[11px] font-bold border border-gray-500/20">{status}</span>; 
+    } 
+  };
+
+  const getPerformanceColor = (stock: number) => { 
+    if (stock >= 20) return "bg-emerald-500 shadow-emerald-500/50"; 
+    if (stock >= 5) return "bg-yellow-500 shadow-yellow-500/50"; 
+    return "bg-red-500 shadow-red-500/50"; 
+  };
+
+  const handleCopy = (product: Product) => { 
+    const text = `📦 Product: ${product.name}\n🔖 Code: ${product.id}\n📁 Category: ${product.category}\n💰 Price: ${product.price}\n📊 Status: ${product.status}`; 
+    navigator.clipboard.writeText(text); 
+    setCopiedId(product.id); 
+    setTimeout(() => setCopiedId(null), 2000); 
+  };
+
+  const openAddProduct = () => { 
+    setEditingProduct(null); 
+    setFormData({
+      name: "",
+      category: "পোশাক (Clothing)",
+      price: "",
+      stock: "",
+      image_url: "",
+      description: ""
+    });
+    setIsDrawerOpen(true); 
+  };
+
+  const openEditProduct = (product: Product) => { 
+    setEditingProduct(product); 
+    setFormData({
+      name: product.name,
+      category: product.category || "পোশাক (Clothing)",
+      price: product.price.toString(),
+      stock: product.stock.toString(),
+      image_url: product.image_url || "",
+      description: product.description || ""
+    });
+    setIsDrawerOpen(true); 
+  };
+
+  return ( 
+    <div className="bg-[#050505] text-[#e5e2e1] min-h-screen font-sans selection:bg-[#F49547]/30 flex">
+      <Toaster position="top-center" />
       {/* Sidebar */}
       <Sidebar isOpen={isSidebarOpen} setIsOpen={setIsSidebarOpen} />
 
@@ -118,7 +232,6 @@ export default function AdminProductsPage() {
             </div>
             
             <div className="flex items-center gap-3 w-full md:w-auto">
-              
               {/* Categories Dropdown */}
               <div className="relative flex-1 md:flex-none">
                 <button 
@@ -175,113 +288,100 @@ export default function AdminProductsPage() {
                   <tr className="bg-[#0a0a0a]/50 text-gray-400 text-[11px] uppercase tracking-widest border-b border-[#1f1f1f]">
                     <th className="py-4 px-6 font-semibold">Product Info</th>
                     <th className="py-4 px-6 font-semibold">Category</th>
-                    <th className="py-4 px-6 font-semibold">Warehouse</th>
+                    <th className="py-4 px-6 font-semibold">Price</th>
                     <th className="py-4 px-6 font-semibold">Performance</th>
                     <th className="py-4 px-6 font-semibold">Stock & Status</th>
                     <th className="py-4 px-6 font-semibold text-center">Action</th>
                   </tr>
                 </thead>
                 <tbody className="text-sm">
-                  {mockProducts.map((product) => (
-                    <tr key={product.id} className="border-b border-[#1f1f1f] hover:bg-[#161616] transition-colors group">
-                      
-                      {/* Product Info */}
-                      <td className="py-4 px-6">
-                        <div className="flex items-center gap-4">
-                          <div className="w-14 h-14 rounded-xl bg-[#0a0a0a] border border-[#1f1f1f] p-1 flex shrink-0 items-center justify-center overflow-hidden">
-                            {product.img ? 
-                              <img src={product.img} alt={product.name} className="w-full h-full object-cover rounded-lg opacity-90 group-hover:opacity-100 transition-opacity" /> 
-                              : <ImageIcon size={20} className="text-gray-600" />
-                            }
-                          </div>
-                          <div>
-                            <div className="text-gray-200 font-semibold group-hover:text-[#F49547] transition-colors line-clamp-1">{product.name}</div>
-                            <div className="flex items-center gap-2 mt-1">
-                              <span className="text-xs text-gray-500 font-mono bg-[#1a1a1a] px-1.5 py-0.5 rounded border border-[#2a2a2a]">{product.id}</span>
-                              <span className="text-sm font-bold text-white">{product.price}</span>
-                            </div>
-                          </div>
-                        </div>
-                      </td>
-
-                      {/* Category */}
-                      <td className="py-4 px-6 text-gray-400 font-medium">{product.category}</td>
-
-                      {/* Warehouse (Off-white Mark) */}
-                      <td className="py-4 px-6">
-                        <div className="flex items-center gap-2 text-gray-300 text-sm">
-                          <span className="w-2 h-2 rounded-full bg-gray-600"></span>
-                          {product.warehouse}
-                        </div>
-                      </td>
-
-                      {/* Performance (Purple Mark) */}
-                      <td className="py-4 px-6">
-                        <div className="flex items-center gap-2.5">
-                          <span className={`w-2.5 h-2.5 rounded-full shadow-sm ${getPerformanceColor(product.performance)}`}></span>
-                          <span className="text-white font-bold">{product.performance}%</span>
-                        </div>
-                        <p className="text-[10px] text-gray-500 mt-0.5">Sales Score</p>
-                      </td>
-
-                      {/* Stock & Status */}
-                      <td className="py-4 px-6">
-                        <div className="mb-1.5">
-                          {product.stock > 0 ? <span className="font-bold text-white">{product.stock} <span className="text-xs text-gray-500 font-normal">pcs left</span></span> : <span className="text-gray-600">-</span>}
-                        </div>
-                        {getStockBadge(product.status)}
-                      </td>
-
-                      {/* Actions (Green Mark) */}
-                      <td className="py-4 px-6 text-center">
-                        <div className="flex items-center justify-center gap-2 relative">
-                          
-                          {/* Copy Button */}
-                          <button onClick={() => handleCopy(product)} className="text-gray-400 hover:text-[#F49547] transition-colors p-1.5 bg-[#1a1a1a] rounded-lg border border-[#2a2a2a] hover:border-[#F49547]/30" title="Copy Product Details">
-                            {copiedId === product.id ? <CheckCircle2 size={16} className="text-emerald-500" /> : <Copy size={16} />}
-                          </button>
-                          
-                          {/* Edit Button */}
-                          <button onClick={() => openEditProduct(product)} className="text-gray-400 hover:text-blue-400 transition-colors p-1.5 bg-[#1a1a1a] rounded-lg border border-[#2a2a2a] hover:border-blue-400/30" title="Edit">
-                            <Edit size={16} />
-                          </button>
-                          
-                          {/* Three Dots Menu */}
-                          <button 
-                            onClick={() => setActiveDropdown(activeDropdown === product.id ? null : product.id)}
-                            className="text-gray-400 hover:text-white transition-colors p-1.5 bg-[#1a1a1a] rounded-lg border border-[#2a2a2a]"
-                          >
-                            <MoreVertical size={16} />
-                          </button>
-
-                          {/* Dropdown Options */}
-                          {activeDropdown === product.id && (
-                            <div className="absolute right-8 top-10 w-40 bg-[#121212] border border-[#1f1f1f] rounded-xl shadow-2xl py-2 z-20 text-left">
-                              <button className="w-full flex items-center gap-2 px-4 py-2 text-sm text-gray-300 hover:bg-[#1a1a1a] hover:text-white transition-colors">
-                                <Power size={14} className="text-emerald-400" /> Active
-                              </button>
-                              <button className="w-full flex items-center gap-2 px-4 py-2 text-sm text-gray-300 hover:bg-[#1a1a1a] hover:text-red-400 transition-colors border-t border-[#1f1f1f] mt-1 pt-2">
-                                <Trash2 size={14} /> Delete
-                              </button>
-                            </div>
-                          )}
-                        </div>
+                  {isLoading ? (
+                    <tr>
+                      <td colSpan={6} className="py-12 text-center text-gray-500">
+                        <Loader2 className="animate-spin mx-auto mb-2" size={24} />
+                        Loading products...
                       </td>
                     </tr>
-                  ))}
+                  ) : products.length === 0 ? (
+                    <tr>
+                      <td colSpan={6} className="py-12 text-center text-gray-500">
+                        No products found. Add a new product to get started!
+                      </td>
+                    </tr>
+                  ) : (
+                    products.map((product) => (
+                      <tr key={product.id} className="border-b border-[#1f1f1f] hover:bg-[#161616] transition-colors group">
+                        
+                        {/* Product Info */}
+                        <td className="py-4 px-6">
+                          <div className="flex items-center gap-4">
+                            <div className="w-14 h-14 rounded-xl bg-[#0a0a0a] border border-[#1f1f1f] p-1 flex shrink-0 items-center justify-center overflow-hidden">
+                              {product.image_url ? 
+                                <img src={product.image_url} alt={product.name} className="w-full h-full object-cover rounded-lg opacity-90 group-hover:opacity-100 transition-opacity" /> 
+                                : <ImageIcon size={20} className="text-gray-600" />
+                              }
+                            </div>
+                            <div>
+                              <div className="text-gray-200 font-semibold group-hover:text-[#F49547] transition-colors line-clamp-1">{product.name}</div>
+                              <div className="flex items-center gap-2 mt-1">
+                                <span className="text-xs text-gray-500 font-mono bg-[#1a1a1a] px-1.5 py-0.5 rounded border border-[#2a2a2a]">{product.id.split('-')[0]}</span>
+                              </div>
+                            </div>
+                          </div>
+                        </td>
+
+                        {/* Category */}
+                        <td className="py-4 px-6 text-gray-400 font-medium">{product.category}</td>
+                        
+                        {/* Price */}
+                        <td className="py-4 px-6 font-bold text-white">৳{product.price}</td>
+
+                        {/* Performance */}
+                        <td className="py-4 px-6">
+                          <div className="flex items-center gap-2.5">
+                            <span className={`w-2.5 h-2.5 rounded-full shadow-sm ${getPerformanceColor(product.stock)}`}></span>
+                            <span className="text-white font-bold">{Math.min(product.stock * 2, 100)}%</span>
+                          </div>
+                          <p className="text-[10px] text-gray-500 mt-0.5">Sales Score</p>
+                        </td>
+
+                        {/* Stock & Status */}
+                        <td className="py-4 px-6">
+                          <div className="mb-1.5">
+                            {product.stock > 0 ? <span className="font-bold text-white">{product.stock} <span className="text-xs text-gray-500 font-normal">pcs left</span></span> : <span className="text-gray-600">-</span>}
+                          </div>
+                          {getStockBadge(product.status)}
+                        </td>
+
+                        {/* Actions */}
+                        <td className="py-4 px-6 text-center">
+                          <div className="flex items-center justify-center gap-2 relative">
+                            <button onClick={() => handleCopy(product)} className="text-gray-400 hover:text-[#F49547] transition-colors p-1.5 bg-[#1a1a1a] rounded-lg border border-[#2a2a2a] hover:border-[#F49547]/30" title="Copy Details">
+                              {copiedId === product.id ? <CheckCircle2 size={16} className="text-emerald-500" /> : <Copy size={16} />}
+                            </button>
+                            <button onClick={() => openEditProduct(product)} className="text-gray-400 hover:text-blue-400 transition-colors p-1.5 bg-[#1a1a1a] rounded-lg border border-[#2a2a2a] hover:border-blue-400/30" title="Edit">
+                              <Edit size={16} />
+                            </button>
+                            <button 
+                              onClick={() => setActiveDropdown(activeDropdown === product.id ? null : product.id)}
+                              className="text-gray-400 hover:text-white transition-colors p-1.5 bg-[#1a1a1a] rounded-lg border border-[#2a2a2a]"
+                            >
+                              <MoreVertical size={16} />
+                            </button>
+                            {activeDropdown === product.id && (
+                              <div className="absolute right-8 top-10 w-32 bg-[#121212] border border-[#1f1f1f] rounded-xl shadow-2xl py-2 z-20 text-left">
+                                <button onClick={() => handleDelete(product.id)} className="w-full flex items-center gap-2 px-4 py-2 text-sm text-gray-300 hover:bg-[#1a1a1a] hover:text-red-400 transition-colors">
+                                  <Trash2 size={14} /> Delete
+                                </button>
+                              </div>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    ))
+                  )}
                 </tbody>
               </table>
-            </div>
-            
-            {/* Pagination */}
-            <div className="p-4 border-t border-[#1f1f1f] flex items-center justify-between text-sm text-gray-500">
-              <div>Showing 1 to 5 of 45 products</div>
-              <div className="flex gap-1">
-                <button className="px-3 py-1.5 bg-[#0a0a0a] border border-[#1f1f1f] rounded-lg hover:text-white hover:bg-[#1a1a1a] transition-colors">Prev</button>
-                <button className="px-3 py-1.5 bg-[#F49547] text-white rounded-lg font-bold">1</button>
-                <button className="px-3 py-1.5 bg-[#0a0a0a] border border-[#1f1f1f] rounded-lg hover:text-white hover:bg-[#1a1a1a] transition-colors">2</button>
-                <button className="px-3 py-1.5 bg-[#0a0a0a] border border-[#1f1f1f] rounded-lg hover:text-white hover:bg-[#1a1a1a] transition-colors">Next</button>
-              </div>
             </div>
           </div>
         </main>
@@ -293,95 +393,65 @@ export default function AdminProductsPage() {
             
             <div className="relative w-full max-w-lg bg-[#121212] h-full shadow-2xl border-l border-[#1f1f1f] flex flex-col animate-in slide-in-from-right duration-300">
               
-              {/* Drawer Header */}
               <div className="flex justify-between items-center p-6 border-b border-[#1f1f1f] bg-[#0a0a0a]">
                 <div>
                   <h3 className="text-xl font-bold text-white">
                     {editingProduct ? "Edit Product" : "Add New Product"}
                   </h3>
-                  <p className="text-sm text-gray-500 mt-1">
-                    {editingProduct ? `Editing ID: ${editingProduct.id}` : "Fill in the details for the new product"}
-                  </p>
                 </div>
                 <button onClick={() => setIsDrawerOpen(false)} className="p-2 text-gray-400 hover:text-white bg-[#1a1a1a] rounded-full transition-colors">
                   <X size={20} />
                 </button>
               </div>
 
-              {/* Drawer Content */}
-              <div className="flex-1 overflow-y-auto p-6 space-y-6 scrollbar-hide">
-                
-                {/* Image Upload Area */}
-                <div className="border-2 border-dashed border-[#2a2a2a] rounded-2xl p-8 flex flex-col items-center justify-center text-center bg-[#1a1a1a]/50 hover:bg-[#1a1a1a] transition-colors cursor-pointer group">
-                  {editingProduct?.img ? (
-                    <img src={editingProduct.img} alt="Product" className="h-32 object-contain rounded-lg mb-4" />
-                  ) : (
-                    <div className="w-16 h-16 rounded-full bg-[#F49547]/10 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-                      <Upload size={24} className="text-[#F49547]" />
-                    </div>
-                  )}
-                  <p className="text-sm font-semibold text-white">Click to upload product image</p>
-                  <p className="text-xs text-gray-500 mt-1">PNG, JPG, WEBP up to 5MB</p>
-                </div>
-
-                {/* Form Fields */}
-                <div className="space-y-4">
+              <div className="flex-1 overflow-y-auto p-6 space-y-6">
+                <form id="product-form" onSubmit={handleSaveProduct} className="space-y-4">
                   <div>
                     <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Product Name</label>
-                    <input type="text" defaultValue={editingProduct?.name || ""} placeholder="e.g. Baby Summer Romper" className="w-full bg-[#1a1a1a] border border-[#2a2a2a] rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-[#F49547]/50 focus:ring-1 focus:ring-[#F49547]/50" />
+                    <input required type="text" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} placeholder="e.g. Baby Summer Romper" className="w-full bg-[#1a1a1a] border border-[#2a2a2a] rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-[#F49547]/50" />
                   </div>
 
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Price (৳)</label>
-                      <input type="text" defaultValue={editingProduct ? editingProduct.price.replace('৳', '') : ""} placeholder="0.00" className="w-full bg-[#1a1a1a] border border-[#2a2a2a] rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-[#F49547]/50" />
+                      <input required type="number" min="0" value={formData.price} onChange={e => setFormData({...formData, price: e.target.value})} placeholder="0.00" className="w-full bg-[#1a1a1a] border border-[#2a2a2a] rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-[#F49547]/50" />
                     </div>
                     <div>
                       <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Stock Qty</label>
-                      <input type="number" defaultValue={editingProduct?.stock || ""} placeholder="0" className="w-full bg-[#1a1a1a] border border-[#2a2a2a] rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-[#F49547]/50" />
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Category</label>
-                      <select className="w-full bg-[#1a1a1a] border border-[#2a2a2a] rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-[#F49547]/50 appearance-none">
-                        <option>পোশাক (Clothing)</option>
-                        <option>খেলনা (Toys)</option>
-                        <option>এসেনশিয়ালস (Essentials)</option>
-                      </select>
-                    </div>
-                    <div>
-                      <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Warehouse</label>
-                      <select className="w-full bg-[#1a1a1a] border border-[#2a2a2a] rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-[#F49547]/50 appearance-none">
-                        <option>মিরপুর ওয়্যারহাউজ</option>
-                        <option>উত্তরা হাব</option>
-                        <option>সাভার গোডাউন</option>
-                      </select>
+                      <input required type="number" min="0" value={formData.stock} onChange={e => setFormData({...formData, stock: e.target.value})} placeholder="0" className="w-full bg-[#1a1a1a] border border-[#2a2a2a] rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-[#F49547]/50" />
                     </div>
                   </div>
 
                   <div>
-                    <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Product Description</label>
-                    <textarea rows={4} placeholder="Write a short description..." className="w-full bg-[#1a1a1a] border border-[#2a2a2a] rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-[#F49547]/50 resize-none"></textarea>
+                    <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Category</label>
+                    <select required value={formData.category} onChange={e => setFormData({...formData, category: e.target.value})} className="w-full bg-[#1a1a1a] border border-[#2a2a2a] rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-[#F49547]/50 appearance-none">
+                      <option>পোশাক (Clothing)</option>
+                      <option>খেলনা (Toys)</option>
+                      <option>এসেনশিয়ালস (Essentials)</option>
+                    </select>
                   </div>
-                </div>
+                  
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Image URL</label>
+                    <input type="url" value={formData.image_url} onChange={e => setFormData({...formData, image_url: e.target.value})} placeholder="Paste direct image link" className="w-full bg-[#1a1a1a] border border-[#2a2a2a] rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-[#F49547]/50" />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Description</label>
+                    <textarea value={formData.description} onChange={e => setFormData({...formData, description: e.target.value})} rows={3} className="w-full bg-[#1a1a1a] border border-[#2a2a2a] rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-[#F49547]/50 resize-none"></textarea>
+                  </div>
+                </form>
               </div>
 
-              {/* Drawer Footer */}
               <div className="p-6 border-t border-[#1f1f1f] bg-[#0a0a0a] flex gap-3">
-                <button onClick={() => setIsDrawerOpen(false)} className="flex-1 py-3 bg-[#1a1a1a] hover:bg-[#252525] border border-[#2a2a2a] rounded-xl text-sm font-semibold text-white transition-colors">
-                  Cancel
-                </button>
-                <button className="flex-1 py-3 bg-[#F49547] hover:bg-[#d87c33] rounded-xl text-sm font-semibold text-white transition-colors shadow-lg shadow-[#F49547]/20 flex items-center justify-center gap-2">
-                  <Save size={16} /> Save Product
+                <button onClick={() => setIsDrawerOpen(false)} type="button" className="flex-1 py-3 bg-[#1a1a1a] border border-[#2a2a2a] rounded-xl text-sm font-semibold text-white">Cancel</button>
+                <button type="submit" form="product-form" disabled={isSubmitting} className="flex-1 py-3 bg-[#F49547] text-white rounded-xl text-sm font-semibold flex items-center justify-center gap-2">
+                  {isSubmitting ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />} Save Product
                 </button>
               </div>
-
             </div>
           </div>
         )}
-
       </div>
     </div>
   );
