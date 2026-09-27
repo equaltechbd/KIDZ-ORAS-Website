@@ -2,43 +2,48 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
-// সবগুলো প্রয়োজনীয় আইকন এখানে ইমপোর্ট করা হলো
+import { useState, useEffect } from "react";
 import { Trash2, Plus, Minus, ArrowLeft, ShoppingCart, Tag, ShoppingBag, ShieldCheck } from "lucide-react";
 
 export default function CartPage() {
-  const [cartItems, setCartItems] = useState([
-    { 
-      id: 1, 
-      title: "কিউট বেবি সুতি রমপার - প্রিমিয়াম কোয়ালিটি", 
-      price: 600, 
-      qty: 1, 
-      img: "https://lh3.googleusercontent.com/aida-public/AB6AXuALG52l4H597Zus4CpnjmcgrWB9leinNtFPsCznTWr7puoP653tLm4mLY8ocqBA5kLsoHp97bYlnMLx1NDdeQxeuvp-paVAAh7QijRbSDO_LSf6nLa8j8lkRHBP67ghM13lQRHZ3203sba1Q8T1zqH7Ij1gZSyMEucuq2ZsL9WjvRbVtov32GG_HRrPoy5WBIZKk_L2zB8fmsD4u4vSvn4Dxi9MO-O6nTWqYnQP5-UitwjibcTjOB_v_KZktagBcaqypQ" 
-    },
-    { 
-      id: 2, 
-      title: "জিওমেট্রিক ব্লক সেট কালারফুল ব্রেইন টিজার", 
-      price: 850, 
-      qty: 2, 
-      img: "https://lh3.googleusercontent.com/aida-public/AB6AXuAiNVvtEG3oFqFg05B8OdeQL4kSQdpTXw1ZE3QSusVFz93Q5B2TGxYf-QVDsJDD2h2Q6qVy-Zu37DxTlFyRXMmQdM-yP-CQl4YtGbfh9jt7Xn9SlXIin0eOE3ZC0MaxxUSr1iidBpYP7hwKHFyMv7yWBG7rnM4l-m1SGdsCfpun3f_d2a3-Bx6mpVStn99mBeQqJPbYdxOfYygtY4lq26cLflC8X58WmBwRUoJYO_sfQlDNSGb2XQCG" 
-    }
-  ]);
+  const [cartItems, setCartItems] = useState<any[]>([]);
+  const [isLoaded, setIsLoaded] = useState(false);
 
-  const updateQuantity = (id: number, delta: number) => {
+  // পেজ লোড হওয়ার পর লোকাল স্টোরেজ থেকে কার্টের ডেটা নিয়ে আসা
+  useEffect(() => {
+    const savedCart = localStorage.getItem('cart');
+    if (savedCart) {
+      setCartItems(JSON.parse(savedCart));
+    }
+    setIsLoaded(true);
+  }, []);
+
+  // কার্ট আপডেট হলে লোকাল স্টোরেজেও সেভ করা
+  useEffect(() => {
+    if (isLoaded) {
+      localStorage.setItem('cart', JSON.stringify(cartItems));
+      // কার্ট আপডেট হওয়ার পর অন্যান্য কম্পোনেন্টকে (যেমন হেডার) জানানোর জন্য ইভেন্ট ফায়ার করা
+      window.dispatchEvent(new Event('cartUpdated')); 
+    }
+  }, [cartItems, isLoaded]);
+
+  const updateQuantity = (id: string, delta: number) => {
     setCartItems(items =>
       items.map(item =>
-        item.id === id ? { ...item, qty: Math.max(1, item.qty + delta) } : item
+        item.id === id ? { ...item, quantity: Math.max(1, item.quantity + delta) } : item
       )
     );
   };
 
-  const removeItem = (id: number) => {
+  const removeItem = (id: string) => {
     setCartItems(items => items.filter(item => item.id !== id));
   };
 
-  const subtotal = cartItems.reduce((acc, item) => acc + (item.price * item.qty), 0);
-  const deliveryCharge = 60;
-  const total = subtotal > 0 ? subtotal + deliveryCharge : 0;
+  const subtotal = cartItems.reduce((acc, item) => acc + (item.price * item.quantity), 0);
+  const deliveryCharge = cartItems.length > 0 ? 60 : 0;
+  const total = subtotal + deliveryCharge;
+
+  if (!isLoaded) return null; // হাইড্রেশন এরর এড়াতে
 
   return (
     <div className="min-h-screen pb-20 bg-[#F8F9FA] text-[#221a15] font-sans">
@@ -69,14 +74,14 @@ export default function CartPage() {
                   
                   {/* Product Image */}
                   <div className="w-20 h-20 md:w-28 md:h-28 bg-[#F5F5F5] rounded-lg p-2 shrink-0">
-                    <img src={item.img} alt={item.title} className="w-full h-full object-cover mix-blend-multiply" />
+                    <img src={item.image} alt={item.name} className="w-full h-full object-cover mix-blend-multiply" />
                   </div>
                   
                   {/* Product Details */}
                   <div className="flex-1 flex flex-col h-full justify-between">
                     <div className="flex justify-between items-start gap-2">
                       <h3 className="text-sm md:text-base font-bold text-gray-800 line-clamp-2 leading-snug">
-                        {item.title}
+                        {item.name}
                       </h3>
                       <button 
                         onClick={() => removeItem(item.id)}
@@ -98,7 +103,7 @@ export default function CartPage() {
                         >
                           <Minus size={16} />
                         </button>
-                        <span className="w-8 text-center text-sm font-bold text-gray-800">{item.qty}</span>
+                        <span className="w-8 text-center text-sm font-bold text-gray-800">{item.quantity}</span>
                         <button 
                           onClick={() => updateQuantity(item.id, 1)} 
                           className="p-1.5 hover:bg-gray-50 text-gray-600 transition-colors"
