@@ -10,7 +10,8 @@ interface AdminHeaderProps {
 
 export default function AdminHeader({ onMenuClick, title = "Dashboard Overview" }: AdminHeaderProps) {
   return (
-    <header className="bg-[#131313]/80 backdrop-blur-md sticky top-0 z-30 border-b border-[#1f1f1f] flex justify-between items-center h-16 px-4 md:px-8 md:ml-[260px]">
+    // অটোমেটিক রিসাইজের জন্য w-[calc(100%-260px)] যোগ করা হয়েছে
+    <header className="bg-[#131313]/80 backdrop-blur-md sticky top-0 z-30 border-b border-[#1f1f1f] flex justify-between items-center h-16 px-4 md:px-8 md:ml-[260px] w-full md:w-[calc(100%-260px)]">
       <div className="flex items-center gap-4">
         <button onClick={onMenuClick} className="md:hidden text-gray-400 hover:text-[#F49547] p-2 rounded-lg">
           <Menu size={24} />
