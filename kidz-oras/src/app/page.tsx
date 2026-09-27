@@ -1,11 +1,68 @@
 /* eslint-disable @next/next/no-img-element */
+"use client";
+
+import { useState, useEffect } from "react";
 import Link from "next/link";
-import { Menu, Search, ShoppingCart, Home, Store, User, Puzzle, Shirt, Baby, Tag, Image as ImageIcon, Star } from "lucide-react";
+import { createClient } from "@/utils/supabase/client";
+import toast, { Toaster } from "react-hot-toast";
+import { 
+  Menu, Search, ShoppingCart, Home, Store, User, 
+  Puzzle, Shirt, Baby, Tag, Image as ImageIcon, Star, Loader2 
+} from "lucide-react";
 
 export default function HomePage() {
-  // মেইন ব্যাকগ্রাউন্ড: পিওর হোয়াইট
+  const [products, setProducts] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const supabase = createClient();
+
+  // Supabase থেকে লেটেস্ট ৬টি প্রোডাক্ট নিয়ে আসা
+  useEffect(() => {
+    const fetchLatestProducts = async () => {
+      setIsLoading(true);
+      const { data, error } = await supabase
+        .from('products')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(6); // হোমপেজে শুধু শেষের ৬টি দেখাবে
+
+      if (!error && data) {
+        setProducts(data);
+      }
+      setIsLoading(false);
+    };
+
+    fetchLatestProducts();
+  }, [supabase]);
+
+  // কুইক অ্যাড টু কার্ট লজিক
+  const handleQuickAddToCart = (e: React.MouseEvent, prod: any) => {
+    e.preventDefault(); 
+    
+    const cartItem = {
+      id: prod.id,
+      name: prod.name,
+      price: prod.discount_price || prod.price,
+      quantity: 1,
+      image: prod.image_url,
+      variant: null
+    };
+
+    const existingCart = JSON.parse(localStorage.getItem('cart') || '[]');
+    const existingItemIndex = existingCart.findIndex((item: any) => item.id === cartItem.id);
+    
+    if (existingItemIndex >= 0) {
+      existingCart[existingItemIndex].quantity += 1;
+    } else {
+      existingCart.push(cartItem);
+    }
+    
+    localStorage.setItem('cart', JSON.stringify(existingCart));
+    toast.success("প্রোডাক্ট কার্টে যোগ করা হয়েছে!");
+  };
+
   return (
     <div className="min-h-screen pb-32 bg-white text-[#221a15] font-sans">
+      <Toaster position="top-center" />
       
       {/* Premium Header (Pure White with Light Shadow) */}
       <nav className="fixed top-0 left-0 w-full z-50 flex items-center justify-between px-4 md:px-10 py-3 md:py-4 bg-white/95 backdrop-blur-md gap-3 shadow-[0_2px_15px_rgba(0,0,0,0.05)] border-b border-gray-100">
@@ -88,7 +145,7 @@ export default function HomePage() {
           </div>
         </section>
 
-        {/* Featured Products (AliExpress Borderless Style) */}
+        {/* Featured Products (Dynamic Supabase Feed) */}
         <section className="px-4 md:px-5 py-6">
           <div className="max-w-[1400px] mx-auto">
             <h2 className="text-xl md:text-2xl font-bold text-[#221a15] mb-6 pl-1">
@@ -97,66 +154,80 @@ export default function HomePage() {
             
             {/* Grid for Products */}
             <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-x-3 gap-y-6 md:gap-x-4 md:gap-y-8">
-              
-              {[
-                { title: "উডেন মন্টিসরি ফিশিং টয় এডুকেশনাল পাজল", price: "৳৬৫০", oldPrice: "৳৭৫০", sold: "600+", img: "https://lh3.googleusercontent.com/aida-public/AB6AXuDN7P6f248ZyWilkiqmtHN332jWtuKfRNW5Pb02o5y9FmSlXEUqaNHCDMMqoUADbrXEFxcE2nS9iQWu2MSO77j7IWBt30Z_0xkEnOThOFXS3AwPLh-Mqji-lDYgfkOdZ2mlWjRT4meVrLnUzzFtwsPilFHMhoWUX4LSExj7tj4fjd0-8mMRy5B038_dvRIcbg2o9jqFuAV7lQnoZq-6uvvOKBeqE1m45Moj8XYZHr7A4H2QZkqmHSG3" },
-                { title: "জিওমেট্রিক ব্লক সেট কালারফুল ব্রেইন টিজার", price: "৳৮৫০", oldPrice: "৳১০০০", sold: "1k+", img: "https://lh3.googleusercontent.com/aida-public/AB6AXuAiNVvtEG3oFqFg05B8OdeQL4kSQdpTXw1ZE3QSusVFz93Q5B2TGxYf-QVDsJDD2h2Q6qVy-Zu37DxTlFyRXMmQdM-yP-CQl4YtGbfh9jt7Xn9SlXIin0eOE3ZC0MaxxUSr1iidBpYP7hwKHFyMv7yWBG7rnM4l-m1SGdsCfpun3f_d2a3-Bx6mpVStn99mBeQqJPbYdxOfYygtY4lq26cLflC8X58WmBwRUoJYO_sfQlDNSGb2XQCG" },
-                { title: "শেপ সর্টার বক্স বেবি লার্নিং টয়", price: "৳৯৯০", oldPrice: "৳১১৬৫", sold: "2k+", img: "https://lh3.googleusercontent.com/aida-public/AB6AXuAbypmutJAUoTsfZiwVaqynUq38i2PH7x9Oxl2K1M3kd9u69KwQK7c5xQnPUHjgGqrZ7vmCr0Lhp0jLKh8FekiuRRFFufabjPCVE2_cxefLObbMjrxebD7zZRIzIJrLyPraqPrUnF7F_mArtcTb4I2--R7rq_LvAQGcc4Hh1f536EXaxpmYV2IG9wOZNXkedK_7sq8dMRsvuaQL6b5Ph36DYZZw-KWNDB_yJJ9A130x0Zj0kiEdA8IL" },
-                { title: "সিলিকন বেবি টিদার সফট ম্যাটেরিয়াল", price: "৳৩৫০", oldPrice: "৳৪০০", sold: "5k+", img: null },
-                { title: "কিউট বেবি সুতি রমপার - প্রিমিয়াম কোয়ালিটি", price: "৳৬০০", oldPrice: "৳৭০০", sold: "800+", img: "https://lh3.googleusercontent.com/aida-public/AB6AXuALG52l4H597Zus4CpnjmcgrWB9leinNtFPsCznTWr7puoP653tLm4mLY8ocqBA5kLsoHp97bYlnMLx1NDdeQxeuvp-paVAAh7QijRbSDO_LSf6nLa8j8lkRHBP67ghM13lQRHZ3203sba1Q8T1zqH7Ij1gZSyMEucuq2ZsL9WjvRbVtov32GG_HRrPoy5WBIZKk_L2zB8fmsD4u4vSvn4Dxi9MO-O6nTWqYnQP5-UitwjibcTjOB_v_KZktagBcaqypQ" },
-                { title: "সিলিকন ফিডিং স্পুন ফর বেবি", price: "৳১২০", oldPrice: "৳১৫০", sold: "10k+", img: null },
-              ].map((prod, idx) => (
-                <Link href="/product/1" key={idx} className="flex flex-col group cursor-pointer hover:-translate-y-1 transition-transform duration-200">
-                  
-                  {/* Product Image Area (Borderless, Soft BG) */}
-                  <div className="relative aspect-square bg-[#F5F5F5] rounded-xl overflow-hidden mb-2">
-                    {/* AliExpress style discount tag on top left */}
-                    <span className="absolute top-0 left-0 bg-[#E52565] text-white font-bold text-[10px] md:text-xs px-2 py-1 rounded-br-lg z-10">
-                      -১৫%
-                    </span>
-                    
-                    {prod.img ? (
-                      <img className="w-full h-full object-cover mix-blend-multiply" src={prod.img} alt={prod.title} />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center text-gray-300">
-                        <ImageIcon size={48} />
-                      </div>
-                    )}
-                    
-                    {/* Add to cart icon (AliExpress style on bottom right) */}
-                    <button className="absolute bottom-2 right-2 z-10 w-8 h-8 bg-white text-gray-800 rounded-full flex items-center justify-center shadow-md hover:text-[#E52565] transition-colors">
-                      <ShoppingCart size={14} />
-                    </button>
-                  </div>
+              {isLoading ? (
+                <div className="col-span-2 md:col-span-4 lg:col-span-6 flex flex-col items-center justify-center py-20 text-[#E52565]">
+                  <Loader2 className="w-10 h-10 animate-spin mb-4" />
+                  <p className="text-gray-500 font-medium">প্রোডাক্ট লোড হচ্ছে...</p>
+                </div>
+              ) : products.length === 0 ? (
+                <div className="col-span-2 md:col-span-4 lg:col-span-6 text-center py-20">
+                  <p className="text-gray-500 font-medium text-lg">এখনো কোনো প্রোডাক্ট যোগ করা হয়নি!</p>
+                </div>
+              ) : (
+                products.map((prod) => {
+                  const currentPrice = prod.discount_price || prod.price;
+                  const oldPrice = prod.discount_price ? prod.price : null;
+                  const discountPercent = prod.discount_price ? Math.round(((prod.price - prod.discount_price) / prod.price) * 100) : 0;
 
-                  {/* Product Details (Clean, Text-only area) */}
-                  <div className="flex flex-col px-1">
-                    <h3 className="text-sm md:text-[15px] font-medium text-gray-800 line-clamp-2 leading-snug group-hover:text-[#E52565] transition-colors">
-                      {prod.title}
-                    </h3>
-                    
-                    <div className="flex items-center gap-1.5 my-1">
-                      <div className="flex text-[#F49547]">
-                        <Star size={12} fill="currentColor" />
+                  return (
+                    <Link href={`/product/${prod.id}`} key={prod.id} className="flex flex-col group cursor-pointer hover:-translate-y-1 transition-transform duration-200">
+                      
+                      {/* Product Image Area */}
+                      <div className="relative aspect-square bg-[#F5F5F5] rounded-xl overflow-hidden mb-2">
+                        {discountPercent > 0 && (
+                          <span className="absolute top-0 left-0 bg-[#E52565] text-white font-bold text-[10px] md:text-xs px-2 py-1 rounded-br-lg z-10">
+                            -{discountPercent}%
+                          </span>
+                        )}
+                        
+                        {prod.image_url ? (
+                          <img className="w-full h-full object-cover mix-blend-multiply" src={prod.image_url} alt={prod.name} />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center text-gray-300">
+                            <ImageIcon size={48} />
+                          </div>
+                        )}
+                        
+                        <button 
+                          onClick={(e) => handleQuickAddToCart(e, prod)}
+                          className="absolute bottom-2 right-2 z-10 w-8 h-8 bg-white text-gray-800 rounded-full flex items-center justify-center shadow-md hover:text-[#E52565] transition-colors"
+                        >
+                          <ShoppingCart size={14} />
+                        </button>
                       </div>
-                      <span className="text-[11px] md:text-xs text-gray-500 font-medium">4.8 <span className="mx-0.5">|</span> {prod.sold} sold</span>
-                    </div>
-                    
-                    <div className="flex items-baseline gap-1.5 mt-0.5">
-                      <span className="text-lg md:text-xl font-bold text-[#E52565] leading-none">{prod.price}</span>
-                      <span className="text-[11px] md:text-xs text-gray-400 line-through">{prod.oldPrice}</span>
-                    </div>
-                  </div>
 
+                      {/* Product Details */}
+                      <div className="flex flex-col px-1">
+                        <h3 className="text-sm md:text-[15px] font-medium text-gray-800 line-clamp-2 leading-snug group-hover:text-[#E52565] transition-colors">
+                          {prod.name}
+                        </h3>
+                        
+                        <div className="flex items-center gap-1.5 my-1">
+                          <div className="flex text-[#F49547]">
+                            <Star size={12} fill="currentColor" />
+                          </div>
+                          <span className="text-[11px] md:text-xs text-gray-500 font-medium">4.8 <span className="mx-0.5">|</span> {prod.stock > 0 ? 'In Stock' : 'Out of Stock'}</span>
+                        </div>
+                        
+                        <div className="flex items-baseline gap-1.5 mt-0.5">
+                          <span className="text-lg md:text-xl font-bold text-[#E52565] leading-none">৳{currentPrice}</span>
+                          {oldPrice && <span className="text-[11px] md:text-xs text-gray-400 line-through">৳{oldPrice}</span>}
+                        </div>
+                      </div>
+                    </Link>
+                  );
+                })
+              )}
+            </div>
+
+            {/* "আরও দেখুন" বাটনটি এখন লিংক হিসেবে শপ পেজে যাবে */}
+            {!isLoading && products.length > 0 && (
+              <div className="flex justify-center mt-10 md:mt-12">
+                <Link href="/shop" className="px-10 py-2.5 md:py-3 md:px-12 md:text-base border border-gray-300 rounded-full font-bold text-gray-600 hover:border-[#E52565] hover:text-[#E52565] transition-all inline-block">
+                  আরও দেখুন
                 </Link>
-              ))}
-            </div>
-
-            <div className="flex justify-center mt-10 md:mt-12">
-              <button className="px-10 py-2.5 md:py-3 md:px-12 md:text-base border border-gray-300 rounded-full font-bold text-gray-600 hover:border-[#E52565] hover:text-[#E52565] transition-all">
-                আরও দেখুন
-              </button>
-            </div>
+              </div>
+            )}
           </div>
         </section>
       </main>
