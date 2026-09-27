@@ -4,7 +4,6 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/utils/supabase/client";
 import { Lock, Mail, AlertCircle } from "lucide-react";
-export const dynamic = 'force-dynamic';
 
 export default function AdminLogin() {
   const [email, setEmail] = useState("");
@@ -36,7 +35,7 @@ export default function AdminLogin() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4">
+    <div className="min-h-screen flex items-center justify-center p-4 bg-[#050505]">
       <div className="w-full max-w-md bg-[#111111] border border-[#1f1f1f] rounded-2xl p-8 shadow-2xl">
         
         <div className="flex flex-col items-center justify-center mb-8">
