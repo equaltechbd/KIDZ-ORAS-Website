@@ -33,7 +33,8 @@ export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
         { name: "Dashboard", href: "/admin", icon: LayoutDashboard },
         { name: "Analytics", href: "/admin/analytics", icon: TrendingUp },
         { name: "Reviews", href: "/admin/reviews", icon: Star },
-        { name: "Business Records", href: "/admin/reports", icon: BarChart3 },
+        // এখানে নাম এবং লিংক দুটিই আপডেট করা হলো
+        { name: "Finance", href: "/admin/finance", icon: BarChart3 }, 
       ]
     },
     {
