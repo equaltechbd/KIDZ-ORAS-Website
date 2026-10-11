@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Link from "next/link";
 import { createClient } from "@/utils/supabase/client";
 import toast, { Toaster } from "react-hot-toast";
 import { 
